@@ -1,0 +1,8 @@
+echo "--------------------------------------"
+echo "Update package database..............."
+echo "--------------------------------------"
+
+source /etc/tizen-platform.conf
+
+/bin/rm $TZ_SYS_DB/.pkgmgr_parser.db
+$TZ_SYS_BIN/pkg_initdb
