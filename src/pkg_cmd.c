@@ -62,6 +62,38 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 static int __convert_to_absolute_path(char *path);
 
 /* Supported options */
+#ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:e:M:Gqh";
+const struct option long_options[] = {
+	{"install", 0, NULL, 'i'},
+	{"uninstall", 0, NULL, 'u'},
+	{"reinstall", 0, NULL, 'r'},
+	{"move", 0, NULL, 'm'},
+	{"clear", 0, NULL, 'c'},
+	{"getsize", 0, NULL, 'g'},
+	{"activate", 0, NULL, 'A'},
+	{"deactivate", 0, NULL, 'D'},
+	{"activate with Label", 1, NULL, 'L'},
+	{"check", 0, NULL, 'C'},
+	{"kill", 0, NULL, 'k'},
+	{"app-path", 0, NULL, 'a'},
+	{"list", 0, NULL, 'l'},
+	{"show", 0, NULL, 's'},
+	{"descriptor", 1, NULL, 'd'},
+	{"package-path", 1, NULL, 'p'},
+	{"package-type", 1, NULL, 't'},
+	{"package-name", 1, NULL, 'n'},
+	{"move-type", 1, NULL, 'T'},
+	{"getsize-type", 1, NULL, 'T'},
+	{"csc", 1, NULL, 'S'},
+	{"tep-path", 1, NULL, 'e'},
+	{"tep-move", 1, NULL, 'M'},
+	{"global", 0, NULL, 'G'},
+	{"quiet", 0, NULL, 'q'},
+	{"help", 0, NULL, 'h'},
+	{0, 0, 0, 0}		/* sentinel */
+};
+#else
 const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:Gqh";
 const struct option long_options[] = {
 	{"install", 0, NULL, 'i'},
@@ -90,6 +122,7 @@ const struct option long_options[] = {
 	{"help", 0, NULL, 'h'},
 	{0, 0, 0, 0}		/* sentinel */
 };
+#endif
 
 enum pm_tool_request_e {
 	INSTALL_REQ = 1,
@@ -112,11 +145,15 @@ typedef enum pm_tool_request_e req_type;
 
 struct pm_tool_args_t {
 	req_type request;
-	char pkg_path[PKG_NAME_STRING_LEN_MAX];
+	char pkg_path[PATH_MAX];
 	char pkg_type[PKG_TYPE_STRING_LEN_MAX];
 	char pkgid[PKG_NAME_STRING_LEN_MAX];
-	char des_path[PKG_NAME_STRING_LEN_MAX];
+	char des_path[PATH_MAX];
 	char label[PKG_NAME_STRING_LEN_MAX];
+#ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+	char tep_path[PATH_MAX];
+	char tep_move[PKG_NAME_STRING_LEN_MAX];
+#endif
 	int global;
 	int type;
 	int result;
@@ -268,6 +305,43 @@ static int __convert_to_absolute_path(char *path)
 	return 0;
 }
 
+#ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+static int __convert_to_absolute_tep_path(char *path)
+{
+	char abs[PATH_MAX] = {'\0'};
+	char temp[PATH_MAX] = {'\0'};
+	char *ptr = NULL;
+	if (path == NULL) {
+		printf("path is NULL\n");
+		return -1;
+	}
+	strncpy(temp, path, PATH_MAX - 1);
+	if (strchr(path, '/') == NULL) {
+		getcwd(abs, PATH_MAX - 1);
+		if (abs[0] == '\0') {
+			printf("getcwd() failed\n");
+			return -1;
+		}
+		memset(data.tep_path, '\0', PATH_MAX);
+		snprintf(data.tep_path, PATH_MAX - 1, "%s/%s", abs, temp);
+		return 0;
+	}
+	if (strncmp(path, "./", 2) == 0) {
+		ptr = temp;
+		getcwd(abs, PATH_MAX - 1);
+		if (abs[0] == '\0') {
+			printf("getcwd() failed\n");
+			return -1;
+		}
+		ptr = ptr + 2;
+		memset(data.tep_path, '\0', PATH_MAX);
+		snprintf(data.tep_path, PATH_MAX - 1, "%s/%s", abs, ptr);
+		return 0;
+	}
+	return 0;
+}
+#endif
+
 static int __is_app_installed(char *pkgid, uid_t uid)
 {
 	pkgmgrinfo_pkginfo_h handle;
@@ -307,6 +381,10 @@ static void __print_usage()
 	printf("-t, --package-type	provide package type\n");
 	printf("-T, --move-type	provide move type [0 : move to internal /1: move to external]\n");
 	printf("-G, --global	Global Mode [Warning user should be privilegied to use this mode] \n");
+#ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+	printf("-e, --tep-path provide TEP package path\n");
+	printf("-M, --tep-move decide move/copy of TEP package[0:copy TEP package /1 : move TEP package, \n");
+#endif
 	printf("-h, --help	.	print this help\n\n");
 
 	printf("Usage: pkgcmd [options]\n");
@@ -413,10 +491,20 @@ static int __process_request(uid_t uid)
 	switch (data.request) {
 	case INSTALL_REQ:
 		if (data.pkg_type[0] == '\0' || data.pkg_path[0] == '\0') {
+#ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+			if (data.tep_path[0] == '\0') {
+				printf("Please provide the arguments.\n");
+				printf("use -h option to see usage\n");
+				data.result = PKGCMD_ERR_ARGUMENT_INVALID;
+				break;
+			} else
+				printf("only TEP installation\n");
+#else
 			printf("Please provide the arguments.\n");
 			printf("use -h option to see usage\n");
 			data.result = PKGCMD_ERR_ARGUMENT_INVALID;
 			break;
+#endif
 		}
 		main_loop = g_main_loop_new(NULL, FALSE);
 		pc = pkgmgr_client_new(PC_REQUEST);
@@ -425,13 +513,20 @@ static int __process_request(uid_t uid)
 			data.result = PKGCMD_ERR_FATAL_ERROR;
 			break;
 		}
-		if (data.des_path[0] == '\0')
-		{
+		if (data.des_path[0] == '\0') {
+#ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+			if (data.tep_path[0] != '\0')
+				pkgmgr_client_set_tep_path(pc, data.tep_path, data.tep_move);
+#endif
 			ret =
 				pkgmgr_client_usr_install(pc, data.pkg_type, NULL,
 						data.pkg_path, NULL, PM_QUIET,
 						__return_cb, pc, uid);
 		}else{
+#ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+			if (data.tep_path[0] != '\0')
+				pkgmgr_client_set_tep_path(pc, data.tep_path, data.tep_move);
+#endif
 			ret =
 				pkgmgr_client_usr_install(pc, data.pkg_type,
 						data.des_path, data.pkg_path,
@@ -821,12 +916,16 @@ int main(int argc, char *argv[])
 	starttime = tv.tv_sec * 1000l + tv.tv_usec / 1000l;
 
 	data.request = -1;
-	memset(data.des_path, '\0', PKG_NAME_STRING_LEN_MAX);
-	memset(data.pkg_path, '\0', PKG_NAME_STRING_LEN_MAX);
+	memset(data.des_path, '\0', PATH_MAX);
+	memset(data.pkg_path, '\0', PATH_MAX);
 	memset(data.pkgid, '\0', PKG_NAME_STRING_LEN_MAX);
 	memset(data.pkg_type, '\0', PKG_TYPE_STRING_LEN_MAX);
 	memset(data.label, '\0', PKG_TYPE_STRING_LEN_MAX);
-	data.global = 0; //By default pkg_cmd will manage for the current user 
+#ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+	memset(data.tep_path, '\0', PATH_MAX);
+	memset(data.tep_move, '\0', PKG_NAME_STRING_LEN_MAX);
+#endif
+	data.global = 0; //By default pkg_cmd will manage for the current user
 	data.result = 0;
 	data.type = -1;
 	while (1) {
@@ -929,7 +1028,23 @@ int main(int argc, char *argv[])
 				snprintf(data.pkgid, sizeof(data.pkgid),
 						"%s", optarg);
 			break;
-
+ #ifdef _APPFW_FEATURE_EXPANSION_PKG_INSTALL
+		case 'e':	/* tep name */
+			if (optarg)
+				strncpy(data.tep_path, optarg,
+					PATH_MAX - 1);
+			ret = __convert_to_absolute_tep_path(data.tep_path);
+			if (ret == -1) {
+				printf("conversion of relative tep path to absolute path failed\n");
+				return -1;
+			}
+			printf("TEP path is %s\n", data.tep_path);
+			break;
+		case 'M': /*tep move*/
+			if (optarg)
+				strncpy(data.tep_move, (atoi(optarg) == 1)?"tep_move":"tep_copy", PKG_NAME_STRING_LEN_MAX - 1);
+			break;
+#endif
 		case 't':	/* package type */
 			if (optarg)
 				snprintf(data.pkg_type, sizeof(data.pkg_type),
