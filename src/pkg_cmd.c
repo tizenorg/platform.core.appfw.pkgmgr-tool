@@ -1,7 +1,4 @@
-
 /*
- * slp-pkgmgr
- *
  * Copyright (c) 2000 - 2011 Samsung Electronics Co., Ltd. All rights reserved.
  *
  * Contact: Jayoun Lee <airjany@samsung.com>, Sewook Park <sewook7.park@samsung.com>,
@@ -45,6 +42,7 @@
 
 #include <package-manager.h>
 #include <package-manager-types.h>
+#include "delta.h"
 
 #define PKG_TOOL_VERSION	"0.1"
 #define APP_INSTALLATION_PATH_RW	tzplatform_getenv(TZ_USER_APP)
@@ -62,7 +60,7 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 static int __convert_to_absolute_path(char *path);
 
 /* Supported options */
-const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:e:M:Gqh";
+const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:Gqh";
 const struct option long_options[] = {
 	{"install", 0, NULL, 'i'},
 	{"uninstall", 0, NULL, 'u'},
@@ -80,6 +78,9 @@ const struct option long_options[] = {
 	{"show", 0, NULL, 's'},
 	{"descriptor", 1, NULL, 'd'},
 	{"package-path", 1, NULL, 'p'},
+	{"old_pkg", 1, NULL, 'X'},
+	{"new_pkg", 1, NULL, 'Y'},
+	{"delta_pkg", 1, NULL, 'Z'},
 	{"package-type", 1, NULL, 't'},
 	{"package-name", 1, NULL, 'n'},
 	{"move-type", 1, NULL, 'T'},
@@ -108,7 +109,8 @@ enum pm_tool_request_e {
 	KILLAPP_REQ,
 	LIST_REQ,
 	SHOW_REQ,
-	HELP_REQ
+	HELP_REQ,
+	CREATE_DELTA
 };
 typedef enum pm_tool_request_e req_type;
 
@@ -118,6 +120,12 @@ struct pm_tool_args_t {
 	char pkg_type[PKG_TYPE_STRING_LEN_MAX];
 	char pkgid[PKG_NAME_STRING_LEN_MAX];
 	char des_path[PATH_MAX];
+	char pkg_old[PATH_MAX];
+	char pkg_new[PATH_MAX];
+	char delta_pkg[PATH_MAX];
+	char resolved_path_pkg_old[PATH_MAX];
+	char resolved_path_pkg_new[PATH_MAX];
+	char resolved_path_delta_pkg[PATH_MAX];
 	char label[PKG_NAME_STRING_LEN_MAX];
 	char tep_path[PATH_MAX];
 	char tep_move[PKG_NAME_STRING_LEN_MAX];
@@ -404,6 +412,7 @@ static void __print_usage()
 	printf("pkgcmd -g -T <getsize type> -n <pkgid> \n");
 	printf("pkgcmd -C -n <pkgid> \n");
 	printf("pkgcmd -k -n <pkgid> \n");
+	printf("pkgcmd -X <old_pkg> -Y <new_pkg> -Z <delta_pkg> \n");
 
 	printf("Example:\n");
 	printf("pkgcmd -u -n com.samsung.calculator\n");
@@ -491,6 +500,9 @@ static int __process_request(uid_t uid)
 	pkgmgr_client *pc = NULL;
 	char buf[1024] = {'\0'};
 	int pid = -1;
+	char pkg_old[PATH_MAX] = {0, };
+	char pkg_new[PATH_MAX] = {0, };
+
 #if !GLIB_CHECK_VERSION(2,35,0)
 	g_type_init();
 #endif
@@ -534,7 +546,50 @@ static int __process_request(uid_t uid)
 		g_main_loop_run(main_loop);
 		ret = data.result;
 		break;
+	case CREATE_DELTA:
+		printf("CREATE_DELTA\n");
+		if (data.pkg_old[0] == '\0' || data.pkg_new[0] == '\0' ) {
+			printf("tpk pkg missing\n");
+			break;
+		}
+		if(data.delta_pkg[0] == '\0') {
+			snprintf(data.resolved_path_delta_pkg, PATH_MAX, "/tmp/delta_pkg");
+			printf("output file will be /tmp/delta_pkg.delta\n");
+		}
+		const char *unzip_argv[] = {"sh", "/etc/package-manager/pkgmgr-unzip-tpk.sh", "-a", data.resolved_path_pkg_old, "-b", data.resolved_path_pkg_new, "-p", data.resolved_path_delta_pkg, NULL};
+		ret = __xsystem(unzip_argv);
+		if (ret != 0) {
+			printf("unzip is fail .\n");
+			return ret;
+		}
+		printf("unzip is success .\n");
+		char *ptr_old_tpk = NULL;
+		ptr_old_tpk = strrchr(data.resolved_path_pkg_old, '/');
+		if (!ptr_old_tpk) {
+			printf("not able to extract tpk name.\n");
+			break;
+		}
+		ptr_old_tpk++;
+		char *ptr_new_tpk = NULL;
+		ptr_new_tpk = strrchr(data.resolved_path_pkg_new, '/');
+		if (!ptr_new_tpk) {
+			printf("not able to extract tpk name.\n");
+			break;
+		}
+		ptr_new_tpk++;
 
+		snprintf(pkg_old, PATH_MAX,"%s%s%s", TEMP_DELTA_REPO, ptr_old_tpk, UNZIPFILE);
+		snprintf(pkg_new, PATH_MAX,"%s%s%s", TEMP_DELTA_REPO, ptr_new_tpk, UNZIPFILE);
+		__create_diff_file(pkg_old, pkg_new);
+
+		const char *delta_argv[] = {"sh", "/etc/package-manager/pkgmgr-create-delta.sh", "-a", data.resolved_path_pkg_old, "-b", data.resolved_path_pkg_new, "-p", data.resolved_path_delta_pkg, NULL};
+		ret = __xsystem(delta_argv);
+		if (ret != 0) {
+			printf("create delta script fail .\n");
+			return ret;
+		}
+		printf("create delta script success .\n");
+		break;
 	case UNINSTALL_REQ:
 		if (data.pkgid[0] == '\0') {
 			printf("Please provide the arguments.\n");
@@ -899,6 +954,7 @@ int main(int argc, char *argv[])
 	long starttime;
 	long endtime;
 	struct timeval tv;
+	bool is_root_cmd = false;
 
 
 	if (argc == 1)
@@ -911,6 +967,12 @@ int main(int argc, char *argv[])
 	memset(data.des_path, '\0', PATH_MAX);
 	memset(data.pkg_path, '\0', PATH_MAX);
 	memset(data.pkgid, '\0', PKG_NAME_STRING_LEN_MAX);
+	memset(data.pkg_old, '\0', PATH_MAX);
+	memset(data.pkg_new, '\0', PATH_MAX);
+	memset(data.delta_pkg, '\0', PATH_MAX);
+	memset(data.resolved_path_pkg_old, '\0', PATH_MAX);
+	memset(data.resolved_path_pkg_new, '\0', PATH_MAX);
+	memset(data.resolved_path_delta_pkg, '\0', PATH_MAX);
 	memset(data.pkg_type, '\0', PKG_TYPE_STRING_LEN_MAX);
 	memset(data.label, '\0', PKG_TYPE_STRING_LEN_MAX);
 	memset(data.tep_path, '\0', PATH_MAX);
@@ -1008,6 +1070,32 @@ int main(int argc, char *argv[])
 			printf("path is %s\n", data.pkg_path);
 			break;
 
+		case 'X': /*old_tpk*/
+			data.request = CREATE_DELTA;
+			is_root_cmd = true;
+			if (optarg) {
+				strncpy(data.pkg_old, optarg, PATH_MAX - 1);
+			}
+			realpath(data.pkg_old, data.resolved_path_pkg_old);
+			printf("pkg_old abs path is %s\n", data.resolved_path_pkg_old);
+			break;
+
+		case 'Y': /*new_tpk*/
+			if (optarg) {
+				strncpy(data.pkg_new, optarg, PATH_MAX - 1);
+			}
+			realpath(data.pkg_new, data.resolved_path_pkg_new);
+			printf("pkg_new abs path is %s\n", data.resolved_path_pkg_new);
+			break;
+
+		case 'Z': /*delta_tpk*/
+			if (optarg) {
+				strncpy(data.delta_pkg, optarg, PATH_MAX - 1);
+			}
+			printf("delta_pkg is %s\n", data.delta_pkg);
+			realpath(data.delta_pkg, data.resolved_path_delta_pkg);
+			printf("delta_pkg abs path is %s\n",data.resolved_path_delta_pkg);
+			break;
 		case 'd':	/* descriptor path */
 			if (optarg)
 				snprintf(data.des_path, sizeof(data.des_path),
@@ -1068,7 +1156,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	uid_t uid = getuid();
-	if(uid == OWNER_ROOT) {
+	if(!is_root_cmd && uid == OWNER_ROOT) {
 		printf("Current User is Root! : Only regular users are allowed\n");
 		return -1;
 	}

@@ -1,0 +1,31 @@
+About the tool
+
+#This tool creates delta package manually.
+#unzips the tpk files whose delta has to be created
+#compares the directory tpk1 with tpk2.
+#the differences are stored in a file /tmp/difffile.txt (removed after use)
+#The difffile.txt file contains information about the files modified,removed,added.
+#The difffile.txt is parsed and used to create delta package.
+#a delta_info.xml is constructed, which shows list of files(with path) that were added, modified or removed.
+
+USAGE
+pkgcmd -X <old version> -Y <new version> -Z [output file]
+
+  old version-->is the tpk for old version
+  new version-->is the tpk for new version
+  output file-->the ouput delta package
+
+Note:
+#first two parameters are compulsory.
+#If no output file path is passed it is taken as /tmp/delta_pkg.dtpk
+
+PRECAUTIONARY INFORMATION
+#need to have root permission for some of the instructions.
+#xdelta3 needs to be installed on the device.
+
+OUTPUT
+#The output is a delta package in form of a .dtpk (zipped) file.
+
+
+
+

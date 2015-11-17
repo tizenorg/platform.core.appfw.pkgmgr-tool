@@ -1,0 +1,78 @@
+#!/bin/bash
+usage()
+{
+    cat <<EOF
+usage:
+    $1
+	-a|--old_tpk=<old_tpk>
+	-b|--new_tpk=<new_tpk>
+	-p|--delta_tpk=<delta_tpk>
+		[-o|--option=<option>]
+		[-h|--help]
+Mandatory args:
+ -a|--old_tpk         full/absolute delta_tpk of old_tpk
+ -b|--new_tpk         full/absolute delta_tpk of new_tpk
+ -p|--delta_tpk			delta_tpk for delta dir
+Optional args:
+  -h,--help         print this help
+EOF
+    return 0
+}
+
+options=$(getopt -o hp:a:b:p: -l help,old_tpk:,new_tpk:,delta_tpk: -- "$@")
+if [ $? -ne 0 ]; then
+    usage $(basename $0)
+    exit 1
+fi
+eval set -- "$options"
+
+while true
+do
+    case "$1" in
+        -h|--help)	usage $0 && exit 0;;
+        -a|--old_tpk)	old_tpk=$2; shift 2;;
+        -b|--new_tpk)	new_tpk=$2; shift 2;;
+        -p|--delta_tpk)	delta_tpk=$2; shift 2;;
+        --)             shift 1; break ;;
+        *)              break ;;
+    esac
+done
+
+if [ -z "$old_tpk" ]; then
+    echo "'old_tpk' parameter is required"
+    exit 1
+fi
+
+if [ -z "$new_tpk" ]; then
+    echo "'new_tpk' parameter is required"
+    exit 1
+fi
+
+temp_delta_repo="/opt/usr/temp_delta/"
+outpath="_FILES"
+
+cleanup()
+{
+	`rm -rf $temp_delta_repo`
+}
+
+cleanup
+
+if ! mkdir -p $temp_delta_repo; then
+	echo "FAIL: mkdir failed !" >&2
+	exit 1
+fi
+
+old_tpk_unzip_path=$temp_delta_repo`basename $old_tpk`$outpath
+new_tpk_unzip_path=$temp_delta_repo`basename $new_tpk`$outpath
+
+#unzip to .tpk_FILES
+if ! unzip -q $old_tpk -d $old_tpk_unzip_path; then
+	echo "FAIL: unzip $old_tpk failed!" >&2
+	exit 1
+fi
+if ! unzip -q $new_tpk -d $new_tpk_unzip_path; then
+	echo "FAIL: unzip $new_tpk failed!" >&2
+	cleanup
+	exit 1
+fi

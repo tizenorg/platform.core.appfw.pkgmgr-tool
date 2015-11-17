@@ -42,7 +42,7 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS} -fPIE")
 SET(CMAKE_C_FLAGS_DEBUG "-O0 -g -fPIE")
 SET(CMAKE_C_FLAGS_RELEASE "-O2 -fPIE")
 
-ADD_EXECUTABLE(pkgcmd src/pkg_cmd.c)
+ADD_EXECUTABLE(pkgcmd src/pkg_cmd.c src/delta.c)
 TARGET_LINK_LIBRARIES(pkgcmd pkgmgr-client ${pkgs_test_LDFLAGS})
 INSTALL(TARGETS pkgcmd DESTINATION bin)
 
@@ -77,3 +77,7 @@ INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/mime.tpk.xml DESTINATION /usr/sha
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/data/pkgmgr.patch.sh.in pkgmgr.patch.sh @ONLY)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pkgmgr.patch.sh DESTINATION ${SYSCONF_INSTALL_DIR}/opt/upgrade/)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/data/pkgmgr-unzip-tpk.sh.in pkgmgr-unzip-tpk.sh @ONLY)
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pkgmgr-unzip-tpk.sh DESTINATION ${SYSCONF_INSTALL_DIR}/package-manager/)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/data/pkgmgr-create-delta.sh.in pkgmgr-create-delta.sh @ONLY)
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pkgmgr-create-delta.sh DESTINATION ${SYSCONF_INSTALL_DIR}/package-manager/)

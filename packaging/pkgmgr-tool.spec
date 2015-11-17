@@ -70,4 +70,6 @@ chsmack -a '*' %{TZ_SYS_RW_PACKAGES}
 %{_bindir}/pkginfo
 %{_datadir}/mime/packages/mime.wac.xml
 %{_datadir}/mime/packages/mime.tpk.xml
+%attr(0700,root,root) /etc/package-manager/pkgmgr-unzip-tpk.sh
+%attr(0700,root,root) /etc/package-manager/pkgmgr-create-delta.sh
 /usr/share/license/%{name}
