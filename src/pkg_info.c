@@ -1117,11 +1117,6 @@ static int __get_certinfo_from_db(char *pkgid, uid_t uid)
 				if (value)
 					printf("cert type[%d] value = %s\n", i, value);
 			}
-			ret = pkgmgrinfo_pkginfo_destroy_certinfo(handle);
-			if (ret < 0) {
-				printf("pkgmgrinfo_pkginfo_destroy_certinfo failed\n");
-				ret = -1;
-			}
 			break;
 		case 1:
 		case 2:
