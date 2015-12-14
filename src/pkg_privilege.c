@@ -8,10 +8,30 @@
 
 #include <tzplatform_config.h>
 #include <security-manager.h>
+#include <privilege_manager.h>
 #include <pkgmgr_parser.h>
 
 #define OWNER_ROOT 0
 #define GLOBAL_USER tzplatform_getuid(TZ_SYS_GLOBALAPP_USER)
+
+static int _convert_privilege_for_compatibility(const char *api_version,
+		GList *in_priv, GList **out_priv)
+{
+	int ret;
+
+	if (g_list_length(in_priv) == 0)
+		return 0;
+
+	ret = privilege_manager_get_mapped_privilege_list(api_version,
+			PRVMGR_PACKAGE_TYPE_CORE, in_priv, out_priv);
+	if (ret != PRVMGR_ERR_NONE) {
+		printf("privilege_manager_get_mapped_privilege_list error: "
+				"%d\n",	ret);
+		return -1;
+	}
+
+	return 0;
+}
 
 static const char *_get_pkg_root_path(const char *pkgid)
 {
@@ -115,6 +135,7 @@ static void _insert_application_cb(gpointer data, gpointer user_data)
 	app_inst_req *req;
 	application_x *app = (application_x *)data;
 	package_x *pkg = (package_x *)user_data;
+	GList *priv = NULL;
 
 	req = _prepare_request(pkg->package, app->appid);
 	if (req == NULL) {
@@ -131,7 +152,15 @@ static void _insert_application_cb(gpointer data, gpointer user_data)
 				DEFAULT_PRIVILEGE_PLATFORM);
 	}
 
-	g_list_foreach(pkg->privileges, _insert_privilege_cb, (gpointer)req);
+	if (_convert_privilege_for_compatibility(pkg->api_version,
+				pkg->privileges, &priv)) {
+		printf("convert privilege failed\n");
+		return;
+	}
+
+	g_list_foreach(priv, _insert_privilege_cb, (gpointer)req);
+
+	g_list_free_full(priv, free);
 
 	ret = security_manager_app_install(req);
 	if (ret != SECURITY_MANAGER_SUCCESS)
