@@ -7,8 +7,9 @@ License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
 Source1001: %{name}.manifest
 
+Requires:  unzip
+
 BuildRequires:  cmake
-BuildRequires:  unzip
 BuildRequires:  gettext-tools
 BuildRequires:  pkgconfig(dbus-glib-1)
 BuildRequires:  pkgconfig(glib-2.0)
