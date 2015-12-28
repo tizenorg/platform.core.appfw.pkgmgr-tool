@@ -54,6 +54,12 @@
 #define PKGINSTALLUG_CMD "/usr/bin/pkg_install_ug"
 #define PKGPRIVILEGE_CMD "/usr/bin/pkg_privilege -i"
 
+const struct option long_options[] = {
+  {"run-time", 0, NULL, 'r'},
+  {"image-creation", 0, NULL, 'i'},
+  {0, 0, 0, 0}    /* sentinel */
+};
+
 static int _is_global(uid_t uid)
 {
 	return (uid == OWNER_ROOT || uid == GLOBAL_USER) ? 1 : 0;
@@ -119,6 +125,16 @@ static int _initdb_load_directory(uid_t uid, const char *directory)
 
 	return 0;
 }
+
+static int _process_run_time_mode(const char *) {
+    return -1;
+}
+
+static int _process_image_creation_mode(const char *) {
+    return -1;
+}
+
+static int _initdb_load_directory(uid_t uid, const char *directory)
 
 static int _is_authorized()
 {
@@ -193,6 +209,31 @@ int main(int argc, char *argv[])
 	dir = tzplatform_getenv(
 			_is_global(uid) ? TZ_SYS_RW_PACKAGES : TZ_USER_PACKAGES);
 	tzplatform_reset_user();
+
+  int c = -1;
+  int opt_idx = 0;
+  while (1) {
+      c = getopt_long(argc, argv, short_options, long_options,
+          &opt_idx);
+      if (c == -1)
+        break;  /* Parse end */
+      switch (c) {
+      case 'r': /* process in run-time mode */
+        ret = _process_run_time_mode("");
+        break;
+
+      case 'i': /* process in run-time mode */
+        ret = _process_image_creation_mode("");
+        break;
+
+      default:
+        break;
+      }
+    }
+
+  if (ret == -1) {
+    _E("processing run-time or image creation mode failed");
+  }
 
 	return _initdb_load_directory(uid, dir);
 }
