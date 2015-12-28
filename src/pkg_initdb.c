@@ -38,7 +38,7 @@
 
 #define OWNER_ROOT 0
 #define GLOBAL_USER tzplatform_getuid(TZ_SYS_GLOBALAPP_USER)
-#define BUFSZE 1024
+#define BUFSZE 4096
 
 #ifdef _E
 #undef _E
@@ -50,9 +50,7 @@
 #endif
 #define _D(fmt, arg...) fprintf(stderr, "[PKG_INITDB][D][%s,%d] "fmt"\n", __FUNCTION__, __LINE__, ##arg);
 
-#define PKGINFO_CMD "/usr/bin/pkginfo --imd"
-#define PKGINSTALLUG_CMD "/usr/bin/pkg_install_ug"
-#define PKGPRIVILEGE_CMD "/usr/bin/pkg_privilege -i"
+#define PKGINSTALLMANIFEST_CMD "/usr/bin/pkg-install-manifest"
 
 static int _is_global(uid_t uid)
 {
@@ -65,7 +63,6 @@ static int _initdb_load_directory(uid_t uid, const char *directory)
 	struct dirent entry, *result;
 	int ret;
 	char buf[BUFSZE];
-	char buf2[BUFSZE];
 
 	dir = opendir(directory);
 	if (!dir) {
@@ -85,33 +82,19 @@ static int _initdb_load_directory(uid_t uid, const char *directory)
 		snprintf(buf, sizeof(buf), "%s/%s", directory, entry.d_name);
 		_D("manifest file %s", buf);
 
-		ret = pkgmgr_parser_check_manifest_validation(buf);
-		if (ret < 0) {
-			_E("check manifest validation failed code[%d] %s",
-					ret, buf);
-			continue;
-		}
-
-		if (setresuid(uid, uid, OWNER_ROOT)) {
-			_E("Failed to setresuid: %s",
-					strerror_r(errno, buf, sizeof(buf)));
+		pid_t pid = fork();
+		if (pid == 0) {
+			setuid(uid);
+			execl(PKGINSTALLMANIFEST_CMD, PKGINSTALLMANIFEST_CMD, "-x", buf,
+			      (char*)NULL);
+		} else if (pid < 0) {
+			_E("failed to fork and execute %s!", PKGINSTALLMANIFEST_CMD);
 			closedir(dir);
 			return -1;
 		}
-		snprintf(buf2, sizeof(buf2), "%s %s", PKGINFO_CMD, buf);
-		if (system(buf2))
-			_E("[%s %s] returns error", PKGINFO_CMD, buf);
-		snprintf(buf2, sizeof(buf2), "%s %s", PKGINSTALLUG_CMD, buf);
-		if (system(buf2))
-			_E("[%s %s] returns error", PKGINSTALLUG_CMD, buf);
-		snprintf(buf2, sizeof(buf2), "%s %s", PKGPRIVILEGE_CMD, buf);
-		if (system(buf2))
-			_E("[%s %s] returns error", PKGPRIVILEGE_CMD, buf);
-		if (setresuid(OWNER_ROOT, OWNER_ROOT, OWNER_ROOT)) {
-			_E("Failed to setresuid: %s",
-					strerror_r(errno, buf, sizeof(buf)));
-			closedir(dir);
-			return -1;
+		if (pid > 0) {
+			int status = 0;
+			waitpid(pid, &status, 0);
 		}
 	}
 
