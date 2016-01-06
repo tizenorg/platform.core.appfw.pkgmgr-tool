@@ -144,68 +144,80 @@ static void __error_no_to_string(int errnumber, char **errstr)
 	if (errstr == NULL)
 		return;
 	switch (errnumber) {
-	case PKGCMD_ERR_PACKAGE_NOT_FOUND:
-		*errstr = PKGCMD_ERR_PACKAGE_NOT_FOUND_STR;
+        case PKGCMD_ERRCODE_UNZIP_ERROR:
+		*errstr = PKGCMD_ERRCODE_UNZIP_ERROR_STR;
 		break;
-	case PKGCMD_ERR_PACKAGE_INVALID:
-		*errstr = PKGCMD_ERR_PACKAGE_INVALID_STR;
+	case PKGCMD_ERRCODE_SECURITY_ERROR:
+		*errstr = PKGCMD_ERRCODE_SECURITY_ERROR_STR;
 		break;
-	case PKGCMD_ERR_PACKAGE_LOWER_VERSION:
-		*errstr = PKGCMD_ERR_PACKAGE_LOWER_VERSION_STR;
+	case PKGCMD_ERRCODE_REGISTER_ERROR:
+		*errstr = PKGCMD_ERRCODE_REGISTER_ERROR_STR;
 		break;
-	case PKGCMD_ERR_PACKAGE_EXECUTABLE_NOT_FOUND:
-		*errstr = PKGCMD_ERR_PACKAGE_EXECUTABLE_NOT_FOUND_STR;
+	case PKGCMD_ERRCODE_PRIVILEGE_ERROR:
+		*errstr = PKGCMD_ERRCODE_PRIVILEGE_ERROR_STR;
 		break;
-	case PKGCMD_ERR_MANIFEST_INVALID:
-		*errstr = PKGCMD_ERR_MANIFEST_INVALID_STR;
+	case PKGCMD_ERRCODE_PARSE_ERROR:
+		*errstr = PKGCMD_ERRCODE_PARSE_ERROR_STR;
 		break;
-	case PKGCMD_ERR_CONFIG_NOT_FOUND:
-		*errstr = PKGCMD_ERR_CONFIG_NOT_FOUND_STR;
+	case PKGCMD_ERRCODE_RECOVERY_ERROR:
+		*errstr = PKGCMD_ERRCODE_RECOVERY_ERROR_STR;
 		break;
-	case PKGCMD_ERR_CONFIG_INVALID:
-		*errstr = PKGCMD_ERR_CONFIG_INVALID_STR;
+	case PKGCMD_ERRCODE_DELTA_ERROR:
+		*errstr = PKGCMD_ERRCODE_DELTA_ERROR_STR;
 		break;
-	case PKGCMD_ERR_SIGNATURE_NOT_FOUND:
-		*errstr = PKGCMD_ERR_SIGNATURE_NOT_FOUND_STR;
+	case PKGCMD_ERRCODE_APP_DIR_ERROR:
+		*errstr = PKGCMD_ERRCODE_APP_DIR_ERROR_STR;
 		break;
-	case PKGCMD_ERR_SIGNATURE_INVALID:
-		*errstr = PKGCMD_ERR_SIGNATURE_INVALID_STR;
+	case PKGCMD_ERRCODE_CONFIG_ERROR:
+		*errstr = PKGCMD_ERRCODE_CONFIG_ERROR_STR;
 		break;
-	case PKGCMD_ERR_SIGNATURE_VERIFICATION_FAILED:
-		*errstr = PKGCMD_ERR_SIGNATURE_VERIFICATION_FAILED_STR;
+	case PKGCMD_ERRCODE_SIGNATURE_ERROR:
+		*errstr = PKGCMD_ERRCODE_SIGNATURE_ERROR_STR;
 		break;
-	case PKGCMD_ERR_ROOT_CERTIFICATE_NOT_FOUND:
-		*errstr = PKGCMD_ERR_ROOT_CERTIFICATE_NOT_FOUND_STR;
+	case PKGCMD_ERRCODE_SIGNATURE_INVALID:
+		*errstr = PKGCMD_ERRCODE_SIGNATURE_INVALID_STR;
 		break;
-	case PKGCMD_ERR_CERTIFICATE_INVALID:
-		*errstr = PKGCMD_ERR_CERTIFICATE_INVALID_STR;
+	case PKGCMD_ERRCODE_CERT_ERROR:
+		*errstr = PKGCMD_ERRCODE_CERT_ERROR_STR;
 		break;
-	case PKGCMD_ERR_CERTIFICATE_CHAIN_VERIFICATION_FAILED:
-		*errstr = PKGCMD_ERR_CERTIFICATE_CHAIN_VERIFICATION_FAILED_STR;
+	case PKGCMD_ERRCODE_AUTHOR_CERT_NOT_MATCH:
+		*errstr = PKGCMD_ERRCODE_AUTHOR_CERT_NOT_MATCH_STR;
 		break;
-	case PKGCMD_ERR_CERTIFICATE_EXPIRED:
-		*errstr = PKGCMD_ERR_CERTIFICATE_EXPIRED_STR;
+	case PKGCMD_ERRCODE_AUTHOR_CERT_NOT_FOUND:
+		*errstr = PKGCMD_ERRCODE_AUTHOR_CERT_NOT_FOUND_STR;
 		break;
-	case PKGCMD_ERR_INVALID_PRIVILEGE:
-		*errstr = PKGCMD_ERR_INVALID_PRIVILEGE_STR;
+	case PKGCMD_ERRCODE_ICON_ERROR:
+		*errstr = PKGCMD_ERRCODE_ICON_ERROR_STR;
 		break;
-	case PKGCMD_ERR_MENU_ICON_NOT_FOUND:
-		*errstr = PKGCMD_ERR_MENU_ICON_NOT_FOUND_STR;
+	case PKGCMD_ERRCODE_ICON_NOT_FOUND:
+		*errstr = PKGCMD_ERRCODE_ICON_NOT_FOUND_STR;
 		break;
-	case PKGCMD_ERR_FATAL_ERROR:
-		*errstr = PKGCMD_ERR_FATAL_ERROR_STR;
+	case PKGCMD_ERRCODE_MANIFEST_ERROR:
+		*errstr = PKGCMD_ERRCODE_MANIFEST_ERROR_STR;
 		break;
-	case PKGCMD_ERR_OUT_OF_STORAGE:
-		*errstr = PKGCMD_ERR_OUT_OF_STORAGE_STR;
+	case PKGCMD_ERRCODE_MANIFEST_NOT_FOUND:
+		*errstr = PKGCMD_ERRCODE_MANIFEST_NOT_FOUND_STR;
 		break;
-	case PKGCMD_ERR_OUT_OF_MEMORY:
-		*errstr = PKGCMD_ERR_OUT_OF_MEMORY_STR;
+	case PKGCMD_ERRCODE_PACKAGE_NOT_FOUND:
+		*errstr = PKGCMD_ERRCODE_PACKAGE_NOT_FOUND_STR;
 		break;
-	case PKGCMD_ERR_ARGUMENT_INVALID:
-		*errstr = PKGCMD_ERR_ARGUMENT_INVALID_STR;
+	case PKGCMD_ERRCODE_OPERATION_NOT_ALLOWED:
+		*errstr = PKGCMD_ERRCODE_OPERATION_NOT_ALLOWED_STR;
+		break;
+	case PKGCMD_ERRCODE_OUT_OF_SPACE:
+		*errstr = PKGCMD_ERRCODE_OUT_OF_SPACE_STR;
+		break;
+	case PKGCMD_ERRCODE_INVALID_VALUE:
+		*errstr = PKGCMD_ERRCODE_INVALID_VALUE_STR;
+		break;
+	case PKGCMD_ERRCODE_ERROR:
+		*errstr = PKGCMD_ERRCODE_ERROR_STR;
+		break;
+	case PKGCMD_ERRCODE_OK:
+		*errstr = PKGCMD_ERRCODE_OK_STR;
 		break;
 	default:
-		*errstr = PKGCMD_ERR_UNKNOWN_STR;
+		*errstr = "Undefined Error";
 		break;
 	}
 }
@@ -216,7 +228,6 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 {
 	int ret_val;
 	char delims[] = ":";
-	char *extra_str = NULL;
 	char *ret_result = NULL;
 
 	if (strncmp(key, "error", strlen("error")) == 0) {
@@ -225,10 +236,8 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 
 		ret_result = strstr((char *)val, delims);
 		if (ret_result){
-			extra_str = strdup(ret_result);
 			printf("__return_cb req_id[%d] pkg_type[%s] pkgid[%s] key[%s] val[%d] error message: %s\n",
-					   req_id, pkg_type, pkgid, key, ret_val, extra_str);
-			free(extra_str);
+					   req_id, pkg_type, pkgid, key, ret_val, ret_result);
 		}
 		else
 			printf("__return_cb req_id[%d] pkg_type[%s] pkgid[%s] key[%s] val[%d]\n",
@@ -240,7 +249,7 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 
 	if (strncmp(key, "end", strlen("end")) == 0) {
 		if ((strncmp(val, "fail", strlen("fail")) == 0) && data.result == 0){
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 		}
 		g_main_loop_quit(main_loop);
 	}
@@ -511,14 +520,14 @@ static int __process_request(uid_t uid)
 		if (data.pkg_type[0] == '\0' || data.pkg_path[0] == '\0') {
 			printf("Please provide the arguments.\n");
 			printf("use -h option to see usage\n");
-			data.result = PKGCMD_ERR_ARGUMENT_INVALID;
+			data.result = PKGCMD_ERRCODE_INVALID_VALUE;
 			break;
 		}
 		main_loop = g_main_loop_new(NULL, FALSE);
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
 
@@ -538,9 +547,9 @@ static int __process_request(uid_t uid)
 
 		}
 		if (ret < 0){
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			if (access(data.pkg_path, F_OK) != 0)
-				data.result = PKGCMD_ERR_PACKAGE_NOT_FOUND;
+				data.result = PKGCMD_ERRCODE_PACKAGE_NOT_FOUND;
 			break;
 		}
 		g_main_loop_run(main_loop);
@@ -594,14 +603,14 @@ static int __process_request(uid_t uid)
 		if (data.pkgid[0] == '\0') {
 			printf("Please provide the arguments.\n");
 			printf("use -h option to see usage\n");
-			data.result = PKGCMD_ERR_ARGUMENT_INVALID;
+			data.result = PKGCMD_ERRCODE_INVALID_VALUE;
 			break;
 		}
 		main_loop = g_main_loop_new(NULL, FALSE);
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
 //if global
@@ -615,9 +624,9 @@ static int __process_request(uid_t uid)
 		    pkgmgr_client_usr_uninstall(pc, data.pkg_type, data.pkgid,
 					    PM_QUIET, __return_cb, NULL,uid);
 		if (ret < 0){
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			if (access(data.pkg_path, F_OK) != 0)
-				data.result = PKGCMD_ERR_PACKAGE_NOT_FOUND;
+				data.result = PKGCMD_ERRCODE_PACKAGE_NOT_FOUND;
 			break;
 		}
 		g_main_loop_run(main_loop);
@@ -628,22 +637,22 @@ static int __process_request(uid_t uid)
 		if (data.pkg_type[0] == '\0' || data.pkgid[0] == '\0') {
 			printf("Please provide the arguments.\n");
 			printf("use -h option to see usage\n");
-			data.result = PKGCMD_ERR_ARGUMENT_INVALID;
+			data.result = PKGCMD_ERRCODE_INVALID_VALUE;
 			break;
 		}
 		main_loop = g_main_loop_new(NULL, FALSE);
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
 
 		ret = pkgmgr_client_usr_reinstall(pc, data.pkg_type, data.pkgid, NULL, PM_QUIET, __return_cb, pc, uid);
 		if (ret < 0){
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			if (access(data.pkg_path, F_OK) != 0)
-				data.result = PKGCMD_ERR_PACKAGE_NOT_FOUND;
+				data.result = PKGCMD_ERRCODE_PACKAGE_NOT_FOUND;
 			break;
 		}
 		g_main_loop_run(main_loop);
@@ -814,21 +823,21 @@ static int __process_request(uid_t uid)
 		if (data.pkgid[0] == '\0') {
 			printf("Please provide the arguments.\n");
 			printf("use -h option to see usage\n");
-			data.result = PKGCMD_ERR_ARGUMENT_INVALID;
+			data.result = PKGCMD_ERRCODE_INVALID_VALUE;
 			break;
 		}
 
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
 
 		if (data.request == KILLAPP_REQ) {
 			ret = pkgmgr_client_usr_request_service(PM_REQUEST_KILL_APP, 0, pc, NULL, data.pkgid, uid, NULL, NULL, &pid);
 			if (ret < 0){
-				data.result = PKGCMD_ERR_FATAL_ERROR;
+				data.result = PKGCMD_ERRCODE_ERROR;
 				break;
 			}
 			if (pid)
@@ -839,7 +848,7 @@ static int __process_request(uid_t uid)
 		} else if (data.request == CHECKAPP_REQ) {
 			ret = pkgmgr_client_usr_request_service(PM_REQUEST_CHECK_APP, 0, pc, NULL, data.pkgid, uid, NULL, NULL, &pid);
 			if (ret < 0){
-				data.result = PKGCMD_ERR_FATAL_ERROR;
+				data.result = PKGCMD_ERRCODE_ERROR;
 				break;
 			}
 
@@ -894,7 +903,7 @@ static int __process_request(uid_t uid)
 	case CSC_REQ:
 		ret = pkgmgr_client_usr_request_service(PM_REQUEST_CSC, 0, NULL, NULL, NULL, uid, data.des_path, NULL, (void *)data.pkg_path);
 		if (ret < 0)
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 		break;
 
 	case GETSIZE_REQ:
@@ -908,7 +917,7 @@ static int __process_request(uid_t uid)
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
 
@@ -918,7 +927,7 @@ static int __process_request(uid_t uid)
 		}
 		ret = pkgmgr_client_usr_request_service(PM_REQUEST_GET_SIZE, data.type, pc, NULL, data.pkgid, uid, NULL, NULL, NULL);
 		if (ret < 0){
-			data.result = PKGCMD_ERR_FATAL_ERROR;
+			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
 
@@ -1164,8 +1173,10 @@ int main(int argc, char *argv[])
 		uid = GLOBAL_USER;
 	}
 	ret = __process_request(uid);
-	if ((ret == -1) && (data.result != 0))
-		data.result = PKGCMD_ERR_ARGUMENT_INVALID;
+	if ((ret < 0) && (data.result == 0)) {
+                printf("Undefined error(%d)", ret);
+		data.result = PKGCMD_ERRCODE_UNDEFINED_ERROR;
+        }
 
 	if (ret != 0) {
 		__error_no_to_string(data.result, &errstr);
