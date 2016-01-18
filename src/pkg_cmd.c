@@ -60,7 +60,7 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 static int __convert_to_absolute_path(char *path);
 
 /* Supported options */
-const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:Gqh";
+const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:B:Gqh";
 const struct option long_options[] = {
 	{"install", 0, NULL, 'i'},
 	{"uninstall", 0, NULL, 'u'},
@@ -88,7 +88,7 @@ const struct option long_options[] = {
 	{"csc", 1, NULL, 'S'},
 	{"tep-path", 1, NULL, 'e'},
 	{"tep-move", 1, NULL, 'M'},
-	{"global", 0, NULL, 'G'},
+	{"global", 0, NULL, 'B'},
 	{"quiet", 0, NULL, 'q'},
 	{"help", 0, NULL, 'h'},
 	{0, 0, 0, 0}		/* sentinel */
@@ -405,15 +405,15 @@ static void __print_usage()
 	printf("-n, --package-name	provide package name\n");
 	printf("-t, --package-type	provide package type\n");
 	printf("-T, --move-type	provide move type [0 : move to internal /1: move to external]\n");
-	printf("-G, --global	Global Mode [Warning user should be privilegied to use this mode] \n");
+	printf("-B, --global	Global Mode [Warning user should be privilegied to use this mode] \n");
 	printf("-e, --tep-path provide TEP package path\n");
 	printf("-M, --tep-move decide move/copy of TEP package[0:copy TEP package /1 : move TEP package, \n");
 	printf("-h, --help	.	print this help\n\n");
 
 	printf("Usage: pkgcmd [options]\n");
-	printf("pkgcmd -i -t <pkg type> (-d <descriptor path>) -p <pkg path> (-G)\n");
-	printf("pkgcmd -u -n <pkgid> (-G)\n");
-	printf("pkgcmd -r -t <pkg type> -n <pkgid> (-G) \n");
+	printf("pkgcmd -i -t <pkg type> (-d <descriptor path>) -p <pkg path> (-B)\n");
+	printf("pkgcmd -u -n <pkgid> (-B)\n");
+	printf("pkgcmd -r -t <pkg type> -n <pkgid> (-B) \n");
 	printf("pkgcmd -l (-t <pkg type>) \n");
 	printf("pkgcmd -s -t <pkg type> -p <pkg path>\n");
 	printf("pkgcmd -s -t <pkg type> -n <pkg name>\n");
@@ -996,35 +996,39 @@ int main(int argc, char *argv[])
 		if (c == -1)
 			break;	/* Parse end */
 		switch (c) {
-		case 'G':	/* install */
+		case 'G':  /* debug mode */
+			/* TBD */
+			break;
+
+		case 'B':  /* global mode */
 			data.global = 1;
 			break;
 
-		case 'i':	/* install */
+		case 'i':  /* install */
 			data.request = INSTALL_REQ;
 			break;
 
-		case 'u':	/* uninstall */
+		case 'u':  /* uninstall */
 			data.request = UNINSTALL_REQ;
 			break;
 
-		case 'r':	/* reinstall */
+		case 'r':  /* reinstall */
 			data.request = REINSTALL_REQ;
 			break;
 
-		case 'c':	/* clear */
+		case 'c':  /* clear */
 			data.request = CLEAR_REQ;
 			break;
 
-		case 'g':	/* get pkg size */
+		case 'g':  /* get pkg size */
 			data.request = GETSIZE_REQ;
 			break;
 
-		case 'm':	/* move */
+		case 'm':  /* move */
 			data.request = MOVE_REQ;
 			break;
 
-		case 'S': /* csc packages */
+		case 'S':  /* csc packages */
 			data.request = CSC_REQ;
 			if (optarg)
 				snprintf(data.des_path, sizeof(data.des_path),
@@ -1032,42 +1036,42 @@ int main(int argc, char *argv[])
 			printf("csc file is %s\n", data.des_path);
 			break;
 
-		case 'A':	/* activate */
+		case 'A':  /* activate */
 			data.request = ACTIVATE_REQ;
 			break;
 
-		case 'D':	/* deactivate */
+		case 'D':  /* deactivate */
 			data.request = DEACTIVATE_REQ;
 			break;
 
-		case 'L':	/* activate with Label */
+		case 'L':  /* activate with Label */
 			data.request = ACTIVATE_REQ;
 			if (optarg)
 				snprintf(data.pkg_path, sizeof(data.pkg_path),
 						"%s", optarg);
 			break;
 
-		case 'a':	/* app installation path */
+		case 'a':  /* app installation path */
 			data.request = APPPATH_REQ;
 			break;
 
-		case 'k':	/* Terminate applications of a package */
+		case 'k':  /* Terminate applications of a package */
 			data.request = KILLAPP_REQ;
 			break;
 
-		case 'C':	/* Check running status of applications of a package */
+		case 'C':  /* Check running status of applications of a package */
 			data.request = CHECKAPP_REQ;
 			break;
 
-		case 'l':	/* list */
+		case 'l':  /* list */
 			data.request = LIST_REQ;
 			break;
 
-		case 's':	/* show */
+		case 's':  /* show */
 			data.request = SHOW_REQ;
 			break;
 
-		case 'p':	/* package path */
+		case 'p':  /* package path */
 			if (optarg)
 				snprintf(data.pkg_path, sizeof(data.pkg_path),
 						"%s", optarg);
@@ -1079,7 +1083,7 @@ int main(int argc, char *argv[])
 			printf("path is %s\n", data.pkg_path);
 			break;
 
-		case 'X': /*old_tpk*/
+		case 'X':  /* old_tpk */
 			data.request = CREATE_DELTA;
 			is_root_cmd = true;
 			if (optarg) {
@@ -1089,7 +1093,7 @@ int main(int argc, char *argv[])
 			printf("pkg_old abs path is %s\n", data.resolved_path_pkg_old);
 			break;
 
-		case 'Y': /*new_tpk*/
+		case 'Y':  /* new_tpk */
 			if (optarg) {
 				strncpy(data.pkg_new, optarg, PATH_MAX - 1);
 			}
@@ -1097,7 +1101,7 @@ int main(int argc, char *argv[])
 			printf("pkg_new abs path is %s\n", data.resolved_path_pkg_new);
 			break;
 
-		case 'Z': /*delta_tpk*/
+		case 'Z':  /* delta_tpk */
 			if (optarg) {
 				strncpy(data.delta_pkg, optarg, PATH_MAX - 1);
 			}
@@ -1105,19 +1109,19 @@ int main(int argc, char *argv[])
 			realpath(data.delta_pkg, data.resolved_path_delta_pkg);
 			printf("delta_pkg abs path is %s\n",data.resolved_path_delta_pkg);
 			break;
-		case 'd':	/* descriptor path */
+		case 'd':  /* descriptor path */
 			if (optarg)
 				snprintf(data.des_path, sizeof(data.des_path),
 						"%s", optarg);
 			break;
 
-		case 'n':	/* package name */
+		case 'n':  /* package name */
 			if (optarg)
 				snprintf(data.pkgid, sizeof(data.pkgid),
 						"%s", optarg);
 			break;
 
-		case 'e':	/* tep name */
+		case 'e':  /* tep name */
 			if (optarg)
 				strncpy(data.tep_path, optarg,
 					PATH_MAX - 1);
@@ -1129,34 +1133,34 @@ int main(int argc, char *argv[])
 			printf("TEP path is %s\n", data.tep_path);
 			break;
 
-		case 'M': /*tep move*/
+		case 'M':  /*tep move*/
 			if (optarg)
 				strncpy(data.tep_move, (atoi(optarg) == 1)?"tep_move":"tep_copy", PKG_NAME_STRING_LEN_MAX - 1);
 			break;
 
-		case 't':	/* package type */
+		case 't':  /* package type */
 			if (optarg)
 				snprintf(data.pkg_type, sizeof(data.pkg_type),
 						"%s", optarg);
 			break;
 
-		case 'T':	/* move type */
+		case 'T':  /* move type */
 			data.type = atoi(optarg);
 			break;
 
-		case 'h':	/* help */
+		case 'h':  /* help */
 			data.request = HELP_REQ;
 			break;
 
-		case 'q':	/* quiet mode is removed */
+		case 'q':  /* quiet mode is removed */
 			break;
 
 			/* Otherwise */
-		case '?':	/* Not an option */
+		case '?':  /* Not an option */
 			__print_usage();
 			break;
 
-		case ':':	/* */
+		case ':':  /* */
 			break;
 
 		default:
