@@ -258,6 +258,30 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 	return 0;
 }
 
+static int __app_return_cb(uid_t target_uid, int req_id, const char *pkg_type,
+		       const char *pkgid, const char *appid, const char *key, const char *val,
+		       const void *pmsg, void *priv_data)
+{
+	int ret_val;
+
+	if (strncmp(key, "error", strlen("error")) == 0) {
+		ret_val = atoi(val);
+		data.result = ret_val;
+	}
+
+	printf("__app_return_cb req_id[%d] pkg_type[%s] pkgid[%s] appid[%s] " \
+				"key[%s] val[%s]\n",
+				req_id, pkg_type, pkgid, appid, key, val);
+
+	if (strncmp(key, "end", strlen("end")) == 0) {
+		if ((strncmp(val, "fail", strlen("fail")) == 0) && data.result == 0)
+			data.result = PKGCMD_ERRCODE_ERROR;
+		g_main_loop_quit(main_loop);
+	}
+
+	return 0;
+}
+
 static int __convert_to_absolute_path(char *path)
 {
 	char abs[PKG_NAME_STRING_LEN_MAX] = {'\0'};
@@ -512,6 +536,7 @@ static int __process_request(uid_t uid)
 	int pid = -1;
 	char pkg_old[PATH_MAX] = {0, };
 	char pkg_new[PATH_MAX] = {0, };
+	pkgmgrinfo_pkginfo_h pkginfo;
 
 #if !GLIB_CHECK_VERSION(2,35,0)
 	g_type_init();
@@ -694,6 +719,7 @@ static int __process_request(uid_t uid)
 			break;
 		}
 
+		main_loop = g_main_loop_new(NULL, FALSE);
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
@@ -703,7 +729,7 @@ static int __process_request(uid_t uid)
 
 		if ( strcmp(data.pkg_type, "app") == 0 ) {
 			if (strlen(data.label) == 0) {
-				ret = pkgmgr_client_usr_activate_app(pc, data.pkgid, uid);
+				ret = pkgmgr_client_usr_activate_app(pc, data.pkgid, __app_return_cb, uid);
 				if (ret < 0)
 					break;
 			} else {
@@ -720,6 +746,7 @@ static int __process_request(uid_t uid)
 				if (ret < 0)
 					break;
 		}
+		g_main_loop_run(main_loop);
 		ret = data.result;
 
 		break;
@@ -733,6 +760,7 @@ static int __process_request(uid_t uid)
 			break;
 		}
 
+		main_loop = g_main_loop_new(NULL, FALSE);
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
@@ -741,7 +769,7 @@ static int __process_request(uid_t uid)
 		}
 
 		if ( strcmp(data.pkg_type, "app") == 0 ) {
-			ret = pkgmgr_client_usr_deactivate_app(pc, data.pkgid, uid);
+			ret = pkgmgr_client_usr_deactivate_app(pc, data.pkgid, __app_return_cb, uid);
 			if (ret < 0)
 				break;
 		}else {
@@ -749,6 +777,7 @@ static int __process_request(uid_t uid)
 			if (ret < 0)
 				break;
 		}
+		g_main_loop_run(main_loop);
 		ret = data.result;
 
 		break;
