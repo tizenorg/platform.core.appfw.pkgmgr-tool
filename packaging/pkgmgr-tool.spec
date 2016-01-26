@@ -24,7 +24,7 @@ BuildRequires:  pkgconfig(xdgmime)
 BuildRequires:  pkgconfig(db-util)
 BuildRequires:  pkgconfig(libsmack)
 BuildRequires:  pkgconfig(pkgmgr)
-BuildRequires:  pkgconfig(capi-security-privilege-manager)
+BuildRequires:  pkgconfig(security-privilege-manager)
 BuildRequires:  pkgmgr-info-parser-devel
 BuildRequires:  pkgmgr-info-parser
 BuildRequires:  fdupes
