@@ -561,18 +561,18 @@ int main(int argc, char *argv[])
 	pkg_size_info_t info = {0, };
 
 	// argv has bellowed meaning
-	// argv[0] = pkgid
-	// argv[1] = get type
-	// argv[3] = req_key
+	// argv[1] = pkgid
+	// argv[2] = get type
+	// argv[4] = req_key
 
-	if (argv[0] == NULL) {
-		ERR("pkgid is NULL\n");
+	if (argv[1] == NULL) {
+		ERR("pkgid is NULL");
 		return -1;
 	}
 
-	pkgid = argv[0];
-	get_type = atoi(argv[1]);
-	req_key = argv[3];
+	pkgid = argv[1];
+	get_type = atoi(argv[2]);
+	req_key = argv[4];
 
 	DBG("start get size : [pkgid=%s, request type=%d]", pkgid, get_type);
 
