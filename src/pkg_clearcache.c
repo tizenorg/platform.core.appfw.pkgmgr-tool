@@ -62,50 +62,55 @@ static int __clear_dir(const char *dirname)
 	}
 
 	dp = opendir(dirname);
-	if (dp != NULL) {
-		while ((ep = readdir(dp))) {
-			snprintf(abs_filename, PATH_MAX - 1, "%s/%s", dirname, ep->d_name);
-			if (lstat(abs_filename, &stFileInfo) < 0) {
-				perror(abs_filename);
-			}
-			if (S_ISDIR(stFileInfo.st_mode)) {
-				if (strcmp(ep->d_name, ".") && strcmp(ep->d_name, "..")) {
-					ret = __clear_dir(abs_filename);
-					if (ret != 0) {
-						LOGE("Couldn't remove the directory. errno : %d (%s)\n", errno, strerror(errno));
-					}
+	if (dp == NULL) {
+		LOGE("Couldn't open the directory. errno : %d (%s)\n", errno,
+				strerror(errno));
+		goto err;
+	}
+	while ((ep = readdir(dp))) {
+		snprintf(abs_filename, PATH_MAX - 1, "%s/%s", dirname,
+				ep->d_name);
+		if (lstat(abs_filename, &stFileInfo) < 0)
+			perror(abs_filename);
 
-					ret = remove(abs_filename);
-					if (ret != 0) {
-						LOGE("Couldn't remove the directory. errno : %d (%s)\n", errno, strerror(errno));
-						goto err;
-					}
-				}
-			} else {
+		if (S_ISDIR(stFileInfo.st_mode)) {
+			if (strcmp(ep->d_name, ".") &&
+					strcmp(ep->d_name, "..")) {
+				ret = __clear_dir(abs_filename);
+				if (ret != 0)
+					LOGE("Couldn't remove the directory. "
+							"errno : %d (%s)\n",
+							errno, strerror(errno));
+
 				ret = remove(abs_filename);
 				if (ret != 0) {
-					LOGE("Couldn't remove the directory. errno : %d (%s)\n", errno, strerror(errno));
+					LOGE("Couldn't remove the directory. "
+							"errno : %d (%s)\n",
+							errno, strerror(errno));
 					goto err;
 				}
 			}
+		} else {
+			ret = remove(abs_filename);
+			if (ret != 0) {
+				LOGE("Couldn't remove the directory. errno : "
+						"%d (%s)\n", errno,
+						strerror(errno));
+				goto err;
+			}
 		}
-		(void)closedir(dp);
-	} else {
-		LOGE("Couldn't open the directory. errno : %d (%s)\n", errno, strerror(errno));
-		goto err;
 	}
-
+	closedir(dp);
 	free(abs_filename);
+
 	return 0;
 
 err:
-	if (abs_filename) {
+	if (abs_filename)
 		free(abs_filename);
-	}
-	if(dp){
-		(void)closedir(dp);
-		dp = NULL;
-	}
+	if (dp)
+		closedir(dp);
+
 	return -1;
 }
 
@@ -124,38 +129,36 @@ static int __clear_cache_dir(const char *pkgid)
 			INTERNAL_CACHE_PATH_PREFIX, pkgid, CACHE_PATH_POSTFIX);
 
 	ret = __clear_dir(dirname);
-	if (ret < 0) {
+	if (ret < 0)
 		LOGE("Failed to clear internal cache dir.");
-	}
 
 	// shared/cache internal
 	snprintf(dirname, sizeof(dirname), "%s/%s%s",
 			INTERNAL_CACHE_PATH_PREFIX, pkgid, SHARED_PATH_POSTFIX);
 
 	ret = __clear_dir(dirname);
-	if (ret < 0) {
+	if (ret < 0)
 		LOGE("Failed to clear external shared cache dir.");
-	}
 
 	return 0;
 }
 
-static int __clear_all_cache_dir_cb(const pkgmgrinfo_pkginfo_h handle, void *user_data)
+static int __clear_all_cache_dir_cb(const pkgmgrinfo_pkginfo_h handle,
+		void *user_data)
 {
 	int res = 0;
 	char *pkgid;
 	int *err_cnt = (int *)user_data;
 
 	res = pkgmgrinfo_pkginfo_get_pkgid(handle, &pkgid);
-	if(res != PMINFO_R_OK) {
+	if (res != PMINFO_R_OK) {
 		LOGE("pkgmgr_pkginfo_get_pkgid() failed");
 		--(*err_cnt);
 		return 0;
 	}
 
 	res = __clear_cache_dir(pkgid);
-	if (res != 0)
-	{	// error flag
+	if (res != 0) {	// error flag
 		LOGE("Failed to clear cache dir of %s", pkgid);
 		--(*err_cnt);
 		return 0;
@@ -167,15 +170,14 @@ static int __clear_all_cache_dir_cb(const pkgmgrinfo_pkginfo_h handle, void *use
 static int __clear_all_cache_dir(void)
 {
 	int err_cnt = 0;
+	int res;
 
-	int res = pkgmgrinfo_pkginfo_get_usr_list(__clear_all_cache_dir_cb, &err_cnt, getuid());
-	if (res != PMINFO_R_OK)
-	{
+	res = pkgmgrinfo_pkginfo_get_usr_list(__clear_all_cache_dir_cb,
+			&err_cnt, getuid());
+	if (res != PMINFO_R_OK) {
 		LOGE("Failed to get pkg list. (%d)", res);
 		return -1;
-	}
-	else if (err_cnt != 0)
-	{
+	} else if (err_cnt != 0) {
 		LOGE("Error occured in %d packages.", err_cnt);
 		return -1;
 	}
@@ -185,26 +187,20 @@ static int __clear_all_cache_dir(void)
 
 int main(int argc, char *argv[])
 {
-	int ret = 0;
+	int ret;
+	char pkgid[MAX_PKG_NAME_LEN];
 
-	if(argv[0] == NULL) {
+	if (argc < 2) {
 		LOGE("pkgid is NULL\n");
 		return -1;
 	}
 
-	char pkgid[MAX_PKG_NAME_LEN]={0};
-
-	snprintf(pkgid,MAX_PKG_NAME_LEN,"%s",argv[0]);
+	snprintf(pkgid, sizeof(pkgid), "%s", argv[1]);
 
 	if (strcmp(pkgid, PKG_CLEAR_ALL_CACHE) == 0)
-	{	// clear all
 		ret = __clear_all_cache_dir();
-	}
 	else
-	{
 		ret = __clear_cache_dir(pkgid);
-	}
-
 
 	return ret;
 }

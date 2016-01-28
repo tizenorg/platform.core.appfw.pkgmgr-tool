@@ -565,14 +565,14 @@ int main(int argc, char *argv[])
 	// argv[1] = get type
 	// argv[3] = req_key
 
-	if (argv[0] == NULL) {
+	if (argv[1] == NULL) {
 		ERR("pkgid is NULL\n");
 		return -1;
 	}
 
-	pkgid = argv[0];
-	get_type = atoi(argv[1]);
-	req_key = argv[3];
+	pkgid = argv[1];
+	get_type = atoi(argv[2]);
+	req_key = argv[4];
 
 	DBG("start get size : [pkgid=%s, request type=%d]", pkgid, get_type);
 
