@@ -57,6 +57,9 @@ cp LICENSE %{buildroot}/usr/share/license/%{name}
 update-mime-database %{_datadir}/mime
 chsmack -a '*' %{TZ_SYS_RW_PACKAGES}
 
+%posttrans
+pkg_initdb
+
 %files
 %manifest %{name}.manifest
 %defattr(-,root,root,-)
