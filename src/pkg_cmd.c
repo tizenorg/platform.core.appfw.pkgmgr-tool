@@ -464,18 +464,18 @@ static void __print_usage()
 	printf("pkgcmd -X <old_pkg> -Y <new_pkg> -Z <delta_pkg> \n");
 
 	printf("Example:\n");
-	printf("pkgcmd -u -n com.samsung.calculator\n");
-	printf("pkgcmd -i -t rpm -p /mnt/nfs/com.samsung.calculator_0.1.2-95_armel.rpm\n");
-	printf("pkgcmd -r -t rpm -n com.samsung.calculator\n");
-	printf("pkgcmd -c -t rpm -n com.samsung.hello\n");
-	printf("pkgcmd -m -t rpm -T 1 -n com.samsung.hello\n");
-	printf("pkgcmd -C -n com.samsung.hello\n");
-	printf("pkgcmd -k -n com.samsung.hello\n");
+	printf("pkgcmd -u -n org.example.hello\n");
+	printf("pkgcmd -i -t tpk -p /tmp/org.example.hello-1.0.0-arm.tpk\n");
+	printf("pkgcmd -r -t tpk -n org.example.hello\n");
+	printf("pkgcmd -c -t tpk -n org.example.hello\n");
+	printf("pkgcmd -m -t tpk -T 1 -n org.example.hello\n");
+	printf("pkgcmd -C -n org.example.hello\n");
+	printf("pkgcmd -k -n org.example.hello\n");
 	printf("pkgcmd -a\n");
-	printf("pkgcmd -a -t rpm -n com.samsung.hello\n");
+	printf("pkgcmd -a -t tpk -n org.example.hello\n");
 	printf("pkgcmd -l\n");
 	printf("pkgcmd -l -t tpk\n");
-	printf("pkgcmd -g -T 0 -n com.samsung.calculator\n");
+	printf("pkgcmd -g -T 0 -n org.example.hello\n");
 
 	exit(0);
 
@@ -847,12 +847,7 @@ static int __process_request(uid_t uid)
 			ret = -1;
 			break;
 		}
-		if (strncmp(data.pkg_type, "rpm", PKG_TYPE_STRING_LEN_MAX - 1) == 0) {
-			snprintf(buf, 1023, "%s/%s", APP_INSTALLATION_PATH_RW, data.pkgid);
-			printf("Tizen Application Installation Path: %s\n", buf);
-			ret = 0;
-			break;
-		} else if (strncmp(data.pkg_type, "wgt", PKG_TYPE_STRING_LEN_MAX - 1) == 0) {
+		if (strncmp(data.pkg_type, "wgt", PKG_TYPE_STRING_LEN_MAX - 1) == 0) {
 			snprintf(buf, 1023, "%s/%s/res/wgt", APP_INSTALLATION_PATH_RW, data.pkgid);
 			printf("Tizen Application Installation Path: %s\n", buf);
 			ret = 0;
