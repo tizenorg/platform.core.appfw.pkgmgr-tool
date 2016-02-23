@@ -70,6 +70,10 @@ ADD_EXECUTABLE(pkg_initdb src/pkg_initdb.c)
 TARGET_LINK_LIBRARIES(pkg_initdb ${pkgs_initdb_LDFLAGS})
 INSTALL(TARGETS pkg_initdb DESTINATION bin)
 
+ADD_EXECUTABLE(install_preload_tpk src/install_preload_tpk.c)
+TARGET_LINK_LIBRARIES(install_preload_tpk ${pkgs_test_LDFLAGS})
+INSTALL(TARGETS install_preload_tpk DESTINATION bin)
+
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/10_package-manager-add.post  DESTINATION ${SYSCONF_INSTALL_DIR}/gumd/useradd.d/)
 
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/mime.wac.xml DESTINATION /usr/share/mime/packages/)

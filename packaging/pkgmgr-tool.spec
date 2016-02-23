@@ -58,7 +58,8 @@ update-mime-database %{_datadir}/mime
 chsmack -a '*' %{TZ_SYS_RW_PACKAGES}
 
 %posttrans
-pkg_initdb
+#pkg_initdb
+install_preload_tpk
 
 %files
 %manifest %{name}.manifest
@@ -73,6 +74,7 @@ pkg_initdb
 %{_bindir}/pkg_privilege
 %{_bindir}/pkg_install_ug
 %{_bindir}/pkginfo
+%attr(0755,root,root) %{_bindir}/install_preload_tpk
 %{_datadir}/mime/packages/mime.wac.xml
 %{_datadir}/mime/packages/mime.tpk.xml
 %attr(0700,root,root) /etc/package-manager/pkgmgr-unzip-tpk.sh
