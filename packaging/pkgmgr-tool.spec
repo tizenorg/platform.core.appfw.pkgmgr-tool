@@ -19,12 +19,10 @@ BuildRequires:  pkgconfig(bundle)
 BuildRequires:  pkgconfig(pkgmgr-info)
 BuildRequires:  pkgconfig(iniparser)
 BuildRequires:  pkgconfig(libtzplatform-config)
-BuildRequires:  pkgconfig(security-manager)
 BuildRequires:  pkgconfig(xdgmime)
 BuildRequires:  pkgconfig(db-util)
 BuildRequires:  pkgconfig(libsmack)
 BuildRequires:  pkgconfig(pkgmgr)
-BuildRequires:  pkgconfig(security-privilege-manager)
 BuildRequires:  pkgmgr-info-parser-devel
 BuildRequires:  pkgmgr-info-parser
 BuildRequires:  fdupes
@@ -71,8 +69,6 @@ install_preload_tpk
 %attr(755,root,root) %{_sysconfdir}/gumd/useradd.d/10_package-manager-add.post
 %{_bindir}/pkg_getsize
 %{_bindir}/pkg_clearcache
-%{_bindir}/pkg_privilege
-%{_bindir}/pkg_install_ug
 %{_bindir}/pkginfo
 %attr(0755,root,root) %{_bindir}/install_preload_tpk
 %{_datadir}/mime/packages/mime.wac.xml
