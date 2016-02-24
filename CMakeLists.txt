@@ -29,7 +29,7 @@ FOREACH(flag ${pkgs_initdb_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
 ENDFOREACH(flag)
 
-pkg_check_modules(pkgs_test REQUIRED dlog glib-2.0 libxml-2.0 bundle pkgmgr-parser pkgmgr-info libtzplatform-config security-manager pkgmgr security-privilege-manager)
+pkg_check_modules(pkgs_test REQUIRED dlog glib-2.0 libxml-2.0 bundle pkgmgr-parser pkgmgr-info libtzplatform-config)
 FOREACH(flag ${pkgs_test_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
 ENDFOREACH(flag)
@@ -49,14 +49,6 @@ INSTALL(TARGETS pkgcmd DESTINATION bin)
 ADD_EXECUTABLE(pkginfo src/pkg_info.c)
 TARGET_LINK_LIBRARIES(pkginfo pkgmgr-client pkgmgr_installer ${pkgs_test_LDFLAGS})
 INSTALL(TARGETS pkginfo DESTINATION bin)
-
-ADD_EXECUTABLE(pkg_privilege src/pkg_privilege.c)
-TARGET_LINK_LIBRARIES(pkg_privilege ${pkgs_test_LDFLAGS})
-INSTALL(TARGETS pkg_privilege DESTINATION bin)
-
-ADD_EXECUTABLE(pkg_install_ug src/pkg_install_ug.c)
-TARGET_LINK_LIBRARIES(pkg_install_ug ${pkgs_test_LDFLAGS})
-INSTALL(TARGETS pkg_install_ug DESTINATION bin)
 
 ADD_EXECUTABLE(pkg_getsize src/pkg_getsize.c)
 TARGET_LINK_LIBRARIES(pkg_getsize pkgmgr-client pkgmgr_installer ${pkgs_test_LDFLAGS})
