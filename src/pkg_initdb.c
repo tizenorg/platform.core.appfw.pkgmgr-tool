@@ -171,11 +171,21 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	if (!_is_global(uid))
-		tzplatform_set_user(uid);
-	dir = tzplatform_getenv(
-			_is_global(uid) ? TZ_SYS_RW_PACKAGES : TZ_USER_PACKAGES);
-	tzplatform_reset_user();
+	if (_is_global(uid)) {
+		/* first, RO location */
+		dir = tzplatform_getenv(TZ_SYS_RO_PACKAGES);
+		ret = _initdb_load_directory(uid, dir);
 
-	return _initdb_load_directory(uid, dir);
+		/* second, RW location */
+		dir = tzplatform_getenv(TZ_SYS_RW_PACKAGES);
+		ret = _initdb_load_directory(uid, dir);
+	} else {
+		/* specified user location */
+		tzplatform_set_user(uid);
+		dir = tzplatform_getenv(TZ_USER_PACKAGES);
+		ret = _initdb_load_directory(uid, dir);
+		tzplatform_reset_user();
+	}
+
+	return ret;
 }
