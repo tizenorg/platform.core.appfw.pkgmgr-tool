@@ -1489,8 +1489,9 @@ int app_func(const pkgmgrinfo_appinfo_h handle, void *user_data)
 	if (apptype)
 		printf("Apptype: %s\n", apptype);
 
-	if (component == PMINFO_UI_APP) {
-		printf("component: uiapp\n");
+	if (component == PMINFO_UI_APP || component == PMINFO_WIDGET_APP) {
+		printf("component: %s\n", component == PMINFO_UI_APP ? "uiapp" :
+				"widgetapp");
 		ret = pkgmgrinfo_appinfo_is_multiple(handle, &multiple);
 		if (ret < 0) {
 			printf("Failed to get multiple\n");
@@ -1908,8 +1909,9 @@ static int __get_app_info(char *appid)
 	if (apptype)
 		printf("Apptype: %s\n", apptype);
 
-	if (component == PMINFO_UI_APP) {
-		printf("component: uiapp\n");
+	if (component == PMINFO_UI_APP || component == PMINFO_WIDGET_APP) {
+		printf("component: %s\n", component == PMINFO_UI_APP ? "uiapp" :
+				"widgetapp");
 
 		if (icon)
 			printf("Icon: %s\n", icon);
