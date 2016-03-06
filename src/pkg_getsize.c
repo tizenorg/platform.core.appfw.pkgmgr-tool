@@ -389,24 +389,24 @@ static char *__get_pkg_size_info_str(const pkg_size_info_t* pkg_size_info)
 		return NULL;
 	}
 
-	snprintf(size_info_str, MAX_LONGLONG_LENGTH, "%lld",
+	snprintf(size_info_str, MAX_SIZE_INFO_SIZE, "%lld",
 			pkg_size_info->data_size);
-	strcat(size_info_str, ":");
+	strncat(size_info_str, ":", MAX_SIZE_INFO_SIZE - strlen(size_info_str)- 1);
 	snprintf(size_info_str + strlen(size_info_str), MAX_LONGLONG_LENGTH,
 			"%lld", pkg_size_info->cache_size);
-	strcat(size_info_str, ":");
+	strncat(size_info_str, ":", MAX_SIZE_INFO_SIZE - strlen(size_info_str)- 1);
 	snprintf(size_info_str + strlen(size_info_str), MAX_LONGLONG_LENGTH,
 			"%lld", pkg_size_info->app_size);
-	strcat(size_info_str, ":");
+	strncat(size_info_str, ":", MAX_SIZE_INFO_SIZE - strlen(size_info_str)- 1);
 	snprintf(size_info_str + strlen(size_info_str), MAX_LONGLONG_LENGTH,
 			"%lld", pkg_size_info->ext_data_size);
-	strcat(size_info_str, ":");
+	strncat(size_info_str, ":", MAX_SIZE_INFO_SIZE - strlen(size_info_str)- 1);
 	snprintf(size_info_str + strlen(size_info_str), MAX_LONGLONG_LENGTH,
 			"%lld", pkg_size_info->ext_cache_size);
-	strcat(size_info_str, ":");
+	strncat(size_info_str, ":", MAX_SIZE_INFO_SIZE - strlen(size_info_str)- 1);
 	snprintf(size_info_str + strlen(size_info_str), MAX_LONGLONG_LENGTH,
 			"%lld", pkg_size_info->ext_app_size);
-	strcat(size_info_str, ":");
+	strncat(size_info_str, ":", MAX_SIZE_INFO_SIZE - strlen(size_info_str)- 1);
 
 	DBG("size_info_str: %s", size_info_str);
 

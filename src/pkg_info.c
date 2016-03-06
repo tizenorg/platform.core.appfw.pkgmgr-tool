@@ -631,7 +631,6 @@ static int __add_app_filter(uid_t uid)
 			break;
 		default:
 			printf("Invalid filter property\n");
-				pkgmgrinfo_appinfo_filter_destroy(handle);
 			ret = -1;
 			goto err;
 		}
