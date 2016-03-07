@@ -338,8 +338,7 @@ static int __convert_to_absolute_tep_path(char *path)
 	}
 	strncpy(temp, path, PATH_MAX - 1);
 	if (strchr(path, '/') == NULL) {
-		getcwd(abs, PATH_MAX - 1);
-		if (abs[0] == '\0') {
+		if (getcwd(abs, PATH_MAX - 1) == NULL) {
 			printf("getcwd() failed\n");
 			return -1;
 		}
@@ -349,8 +348,7 @@ static int __convert_to_absolute_tep_path(char *path)
 	}
 	if (strncmp(path, "./", 2) == 0) {
 		ptr = temp;
-		getcwd(abs, PATH_MAX - 1);
-		if (abs[0] == '\0') {
+		if (getcwd(abs, PATH_MAX - 1) == NULL) {
 			printf("getcwd() failed\n");
 			return -1;
 		}
@@ -378,48 +376,6 @@ static int __is_app_installed(char *pkgid, uid_t uid)
 		pkgmgrinfo_pkginfo_destroy_pkginfo(handle);
 
 	return 0;
-}
-
-static char *__get_pkgid_from_tep(const char *filename)
-{
-	char *pkg_type = NULL;
-	char pkg_file[PATH_MAX] = { '\0', };
-	char *tmp = NULL;
-	char *pkgid = NULL;
-	size_t pkgid_len = 0;
-
-	if (strrchr(filename, '/')) {
-		strncpy(pkg_file, strrchr(filename, '/') + 1, PATH_MAX - 1);
-	} else {
-		strncpy(pkg_file, filename, PATH_MAX - 1);
-	}
-
-	pkg_type = strrchr(pkg_file, '.');
-	if (pkg_type == NULL) {
-		printf("pkg_type is null[%s]\n", filename);
-		return NULL;
-	} else {
-		pkg_type++;
-	}
-
-	if (strcmp(pkg_type, "tep") != 0)
-		return NULL;
-
-	tmp = strrchr(pkg_file, '-');
-	if (tmp == NULL || strlen(tmp) == 0) {
-		printf("Invalid tep file name!!!\n");
-		return NULL;
-	}
-
-	pkgid_len = tmp - pkg_file;
-	pkgid = calloc(1, pkgid_len + 1);
-	if (pkgid == NULL) {
-		printf("Insufficient Memory\n");
-		return NULL;
-	}
-	memcpy((void *)pkgid, (const void *)pkg_file, pkgid_len);
-
-	return pkgid;
 }
 
 static void __print_usage()
@@ -552,7 +508,6 @@ static int __process_request(uid_t uid)
 	char pkg_old[PATH_MAX] = {0, };
 	char pkg_new[PATH_MAX] = {0, };
 	bool blacklist;
-	pkgmgrinfo_pkginfo_h pkginfo;
 
 #if !GLIB_CHECK_VERSION(2,35,0)
 	g_type_init();
@@ -1081,7 +1036,7 @@ int main(int argc, char *argv[])
 	long endtime;
 	struct timeval tv;
 	bool is_root_cmd = false;
-
+	char *rp_result = NULL;
 
 	if (argc == 1)
 		__print_usage();
@@ -1202,16 +1157,24 @@ int main(int argc, char *argv[])
 			if (optarg) {
 				strncpy(data.pkg_old, optarg, PATH_MAX - 1);
 			}
-			realpath(data.pkg_old, data.resolved_path_pkg_old);
-			printf("pkg_old abs path is %s\n", data.resolved_path_pkg_old);
+			rp_result = realpath(data.pkg_old, data.resolved_path_pkg_old);
+			if (rp_result == NULL) {
+				printf("getting realpath failed\n");
+				rp_result = data.pkg_old;
+			}
+			printf("pkg_old abs path is %s\n", rp_result);
 			break;
 
 		case 'Y':  /* new_tpk */
 			if (optarg) {
 				strncpy(data.pkg_new, optarg, PATH_MAX - 1);
 			}
-			realpath(data.pkg_new, data.resolved_path_pkg_new);
-			printf("pkg_new abs path is %s\n", data.resolved_path_pkg_new);
+			rp_result = realpath(data.pkg_new, data.resolved_path_pkg_new);
+			if (rp_result == NULL) {
+				printf("getting realpath failed\n");
+				rp_result = data.pkg_new;
+			}
+			printf("pkg_new abs path is %s\n", rp_result);
 			break;
 
 		case 'Z':  /* delta_tpk */
@@ -1219,8 +1182,12 @@ int main(int argc, char *argv[])
 				strncpy(data.delta_pkg, optarg, PATH_MAX - 1);
 			}
 			printf("delta_pkg is %s\n", data.delta_pkg);
-			realpath(data.delta_pkg, data.resolved_path_delta_pkg);
-			printf("delta_pkg abs path is %s\n",data.resolved_path_delta_pkg);
+			rp_result = realpath(data.delta_pkg, data.resolved_path_delta_pkg);
+			if (rp_result == NULL) {
+				printf("getting realpath failed\n");
+				rp_result = data.delta_pkg;
+			}
+			printf("delta_pkg abs path is %s\n", rp_result);
 			break;
 		case 'd':  /* descriptor path */
 			if (optarg)

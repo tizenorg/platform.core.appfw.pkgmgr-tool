@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <wait.h>
 
 #include <tzplatform_config.h>
 
@@ -70,7 +71,11 @@ static int _install_preload_tpk(uid_t uid, const char *directory)
 
 		pid_t pid = fork();
 		if (pid == 0) {
-			setuid(uid);
+			if (setuid(uid)) {
+				_E("setuid(%d) failed", (int)uid);
+				closedir(dir);
+				return -1;
+			}
 			execl(BACKEND_CMD, BACKEND_CMD, "-i", buf, "--preload",
 			      (char*)NULL);
 		} else if (pid < 0) {
@@ -100,7 +105,6 @@ static int _is_authorized(uid_t uid)
 
 int main(int argc, char *argv[])
 {
-	int ret;
 	const char *dir = tzplatform_mkpath(TZ_SYS_RO_APP, ".preload-tpk");
 	uid_t uid = getuid();
 

@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <wait.h>
 
 #include <pkgmgr_parser.h>
 #include <pkgmgr_parser_db.h>
@@ -43,12 +44,14 @@
 #ifdef _E
 #undef _E
 #endif
-#define _E(fmt, arg...) fprintf(stderr, "[PKG_INITDB][E][%s,%d] "fmt"\n", __FUNCTION__, __LINE__, ##arg);
+#define _E(fmt, arg...) fprintf(stderr, "[PKG_INITDB][E][%s,%d] "fmt"\n", \
+		__FUNCTION__, __LINE__, ##arg);
 
 #ifdef _D
 #undef _D
 #endif
-#define _D(fmt, arg...) fprintf(stderr, "[PKG_INITDB][D][%s,%d] "fmt"\n", __FUNCTION__, __LINE__, ##arg);
+#define _D(fmt, arg...) fprintf(stderr, "[PKG_INITDB][D][%s,%d] "fmt"\n", \
+		__FUNCTION__, __LINE__, ##arg);
 
 #define PKGINSTALLMANIFEST_CMD "/usr/bin/pkg-install-manifest"
 
@@ -60,7 +63,7 @@ static int _is_global(uid_t uid)
 static int _initdb_load_directory(uid_t uid, const char *directory)
 {
 	DIR *dir;
-	struct dirent entry, *result;
+	struct dirent file_info, *result;
 	int ret;
 	char buf[BUFSZE];
 
@@ -73,18 +76,22 @@ static int _initdb_load_directory(uid_t uid, const char *directory)
 
 	_D("Loading manifest files from %s", directory);
 
-	for (ret = readdir_r(dir, &entry, &result);
+	for (ret = readdir_r(dir, &file_info, &result);
 			ret == 0 && result != NULL;
-			ret = readdir_r(dir, &entry, &result)) {
-		if (entry.d_name[0] == '.')
+			ret = readdir_r(dir, &file_info, &result)) {
+		if (file_info.d_name[0] == '.')
 			continue;
 
-		snprintf(buf, sizeof(buf), "%s/%s", directory, entry.d_name);
+		snprintf(buf, sizeof(buf), "%s/%s", directory, file_info.d_name);
 		_D("manifest file %s", buf);
 
 		pid_t pid = fork();
 		if (pid == 0) {
-			setuid(uid);
+			if (setuid(uid)) {
+				_E("setuid(%d) failed", (int)uid);
+				closedir(dir);
+				return -1;
+			}
 			execl(PKGINSTALLMANIFEST_CMD, PKGINSTALLMANIFEST_CMD, "-x", buf,
 			      (char*)NULL);
 		} else if (pid < 0) {
