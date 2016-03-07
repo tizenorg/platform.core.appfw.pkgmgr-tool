@@ -119,12 +119,12 @@ static int __clear_cache_dir(const char *pkgid)
 	int ret = 0;
 	char dirname[PATH_MAX] = {0,};
 
-	if(pkgid == NULL) {
+	if (pkgid == NULL) {
 		LOGE("pkgid is NULL\n");
 		return -1;
 	}
 
-	// cache internal
+	/* cache internal */
 	snprintf(dirname, sizeof(dirname), "%s/%s%s",
 			INTERNAL_CACHE_PATH_PREFIX, pkgid, CACHE_PATH_POSTFIX);
 
@@ -132,7 +132,7 @@ static int __clear_cache_dir(const char *pkgid)
 	if (ret < 0)
 		LOGE("Failed to clear internal cache dir.");
 
-	// shared/cache internal
+	/* shared/cache internal */
 	snprintf(dirname, sizeof(dirname), "%s/%s%s",
 			INTERNAL_CACHE_PATH_PREFIX, pkgid, SHARED_PATH_POSTFIX);
 
@@ -158,7 +158,7 @@ static int __clear_all_cache_dir_cb(const pkgmgrinfo_pkginfo_h handle,
 	}
 
 	res = __clear_cache_dir(pkgid);
-	if (res != 0) {	// error flag
+	if (res != 0) {
 		LOGE("Failed to clear cache dir of %s", pkgid);
 		--(*err_cnt);
 		return 0;

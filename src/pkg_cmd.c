@@ -158,7 +158,7 @@ static void __error_no_to_string(int errnumber, char **errstr)
 	if (errstr == NULL)
 		return;
 	switch (errnumber) {
-        case PKGCMD_ERRCODE_UNZIP_ERROR:
+	case PKGCMD_ERRCODE_UNZIP_ERROR:
 		*errstr = PKGCMD_ERRCODE_UNZIP_ERROR_STR;
 		break;
 	case PKGCMD_ERRCODE_SECURITY_ERROR:
@@ -249,10 +249,9 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 		data.result = ret_val;
 
 		ret_result = strstr((char *)val, delims);
-		if (ret_result){
+		if (ret_result)
 			printf("__return_cb req_id[%d] pkg_type[%s] pkgid[%s] key[%s] val[%d] error message: %s\n",
 					   req_id, pkg_type, pkgid, key, ret_val, ret_result);
-		}
 		else
 			printf("__return_cb req_id[%d] pkg_type[%s] pkgid[%s] key[%s] val[%d]\n",
 					   req_id, pkg_type, pkgid, key, ret_val);
@@ -262,9 +261,8 @@ static int __return_cb(uid_t target_uid, int req_id, const char *pkg_type,
 			   req_id, pkg_type, pkgid, key, val);
 
 	if (strncmp(key, "end", strlen("end")) == 0) {
-		if ((strncmp(val, "fail", strlen("fail")) == 0) && data.result == 0){
+		if ((strncmp(val, "fail", strlen("fail")) == 0) && data.result == 0)
 			data.result = PKGCMD_ERRCODE_ERROR;
-		}
 		g_main_loop_quit(main_loop);
 	}
 
@@ -370,11 +368,12 @@ static int __is_app_installed(char *pkgid, uid_t uid)
 	else
 		ret = pkgmgrinfo_pkginfo_get_pkginfo(pkgid, &handle);
 
-	if(ret < 0) {
+	if (ret < 0) {
 		printf("package is not in pkgmgr_info DB\n");
 		return -1;
-	} else
+	} else {
 		pkgmgrinfo_pkginfo_destroy_pkginfo(handle);
+	}
 
 	return 0;
 }
@@ -439,7 +438,7 @@ static void __print_usage()
 
 }
 
-static int __pkgmgr_list_cb (const pkgmgrinfo_pkginfo_h handle, void *user_data)
+static int __pkgmgr_list_cb(const pkgmgrinfo_pkginfo_h handle, void *user_data)
 {
 	int ret = -1;
 	char *pkgid = NULL;
@@ -473,7 +472,8 @@ static int __pkgmgr_list_cb (const pkgmgrinfo_pkginfo_h handle, void *user_data)
 		return ret;
 	}
 
-	printf("%s\tpkg_type [%s]\tpkgid [%s]\tname [%s]\tversion [%s]\n", for_all_users ? "system apps" : "user apps ", pkg_type, pkgid, pkg_label, pkg_version);
+	printf("%s\tpkg_type [%s]\tpkgid [%s]\tname [%s]\tversion [%s]\n",
+			for_all_users ? "system apps" : "user apps ", pkg_type, pkgid, pkg_label, pkg_version);
 	return ret;
 }
 
@@ -484,14 +484,16 @@ static int __pkg_list_cb(const pkgmgrinfo_pkginfo_h handle, void *user_data)
 	pkgmgrinfo_uidinfo_t *uid_info = (pkgmgrinfo_uidinfo_t *) handle;
 
 	ret = pkgmgrinfo_pkginfo_get_pkgid(handle, &pkgid);
-	if(ret < 0) {
+	if (ret < 0)
 		printf("pkgmgrinfo_pkginfo_get_pkgid() failed\n");
-	}
-  if (uid_info->uid != GLOBAL_USER)
-	  ret = pkgmgr_client_usr_request_service(PM_REQUEST_GET_SIZE, PM_GET_TOTAL_SIZE, (pkgmgr_client *)user_data, NULL, pkgid, uid_info->uid, NULL, NULL, NULL);
-  else
-	  ret = pkgmgr_client_request_service(PM_REQUEST_GET_SIZE, PM_GET_TOTAL_SIZE, (pkgmgr_client *)user_data, NULL, pkgid, NULL, NULL, NULL);
-	if (ret < 0){
+
+	if (uid_info->uid != GLOBAL_USER)
+		ret = pkgmgr_client_usr_request_service(PM_REQUEST_GET_SIZE, PM_GET_TOTAL_SIZE,
+				(pkgmgr_client *)user_data, NULL, pkgid, uid_info->uid, NULL, NULL, NULL);
+	else
+		ret = pkgmgr_client_request_service(PM_REQUEST_GET_SIZE, PM_GET_TOTAL_SIZE,
+				(pkgmgr_client *)user_data, NULL, pkgid, NULL, NULL, NULL);
+	if (ret < 0) {
 		printf("pkgmgr_client_request_service Failed\n");
 		return -1;
 	}
@@ -511,7 +513,7 @@ static int __process_request(uid_t uid)
 	char pkg_new[PATH_MAX] = {0, };
 	bool blacklist;
 
-#if !GLIB_CHECK_VERSION(2,35,0)
+#if !GLIB_CHECK_VERSION(2, 35, 0)
 	g_type_init();
 #endif
 	switch (data.request) {
@@ -533,19 +535,16 @@ static int __process_request(uid_t uid)
 		if (data.tep_path[0] != '\0')
 			pkgmgr_client_set_tep_path(pc, data.tep_path, data.tep_move);
 
-		if (data.des_path[0] == '\0') {
-			ret =
-				pkgmgr_client_usr_install(pc, data.pkg_type, NULL,
-						data.pkg_path, NULL, PM_QUIET,
-						__return_cb, pc, uid);
-		} else {
-			ret =
-				pkgmgr_client_usr_install(pc, data.pkg_type,
-						data.des_path, data.pkg_path,
-						NULL, PM_QUIET, __return_cb, pc, uid);
+		if (data.des_path[0] == '\0')
+			ret = pkgmgr_client_usr_install(pc, data.pkg_type, NULL,
+					data.pkg_path, NULL, PM_QUIET,
+					__return_cb, pc, uid);
+		else
+			ret = pkgmgr_client_usr_install(pc, data.pkg_type,
+					data.des_path, data.pkg_path,
+					NULL, PM_QUIET, __return_cb, pc, uid);
 
-		}
-		if (ret < 0){
+		if (ret < 0) {
 			data.result = PKGCMD_ERRCODE_ERROR;
 			if (access(data.pkg_path, F_OK) != 0)
 				data.result = PKGCMD_ERRCODE_PACKAGE_NOT_FOUND;
@@ -556,15 +555,17 @@ static int __process_request(uid_t uid)
 		break;
 	case CREATE_DELTA:
 		printf("CREATE_DELTA\n");
-		if (data.pkg_old[0] == '\0' || data.pkg_new[0] == '\0' ) {
+		if (data.pkg_old[0] == '\0' || data.pkg_new[0] == '\0') {
 			printf("tpk pkg missing\n");
 			break;
 		}
-		if(data.delta_pkg[0] == '\0') {
+		if (data.delta_pkg[0] == '\0') {
 			snprintf(data.resolved_path_delta_pkg, PATH_MAX, "/tmp/delta_pkg");
 			printf("output file will be /tmp/delta_pkg.delta\n");
 		}
-		const char *unzip_argv[] = {"sh", "/etc/package-manager/pkgmgr-unzip-tpk.sh", "-a", data.resolved_path_pkg_old, "-b", data.resolved_path_pkg_new, "-p", data.resolved_path_delta_pkg, NULL};
+		const char *unzip_argv[] = {"sh", "/etc/package-manager/pkgmgr-unzip-tpk.sh", "-a",
+				data.resolved_path_pkg_old, "-b", data.resolved_path_pkg_new, "-p",
+				data.resolved_path_delta_pkg, NULL};
 		ret = __xsystem(unzip_argv);
 		if (ret != 0) {
 			printf("unzip is fail .\n");
@@ -586,11 +587,13 @@ static int __process_request(uid_t uid)
 		}
 		ptr_new_tpk++;
 
-		snprintf(pkg_old, PATH_MAX,"%s%s%s", TEMP_DELTA_REPO, ptr_old_tpk, UNZIPFILE);
-		snprintf(pkg_new, PATH_MAX,"%s%s%s", TEMP_DELTA_REPO, ptr_new_tpk, UNZIPFILE);
+		snprintf(pkg_old, PATH_MAX, "%s%s%s", TEMP_DELTA_REPO, ptr_old_tpk, UNZIPFILE);
+		snprintf(pkg_new, PATH_MAX, "%s%s%s", TEMP_DELTA_REPO, ptr_new_tpk, UNZIPFILE);
 		__create_diff_file(pkg_old, pkg_new);
 
-		const char *delta_argv[] = {"sh", "/etc/package-manager/pkgmgr-create-delta.sh", "-a", data.resolved_path_pkg_old, "-b", data.resolved_path_pkg_new, "-p", data.resolved_path_delta_pkg, NULL};
+		const char *delta_argv[] = {"sh", "/etc/package-manager/pkgmgr-create-delta.sh", "-a",
+				data.resolved_path_pkg_old, "-b", data.resolved_path_pkg_new, "-p",
+				data.resolved_path_delta_pkg, NULL};
 		ret = __xsystem(delta_argv);
 		if (ret != 0) {
 			printf("create delta script fail .\n");
@@ -612,17 +615,16 @@ static int __process_request(uid_t uid)
 			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
-//if global
+
 		ret = __is_app_installed(data.pkgid, uid);
 		if (ret == -1) {
 			printf("package is not installed\n");
 			break;
 		}
 
-		ret =
-		    pkgmgr_client_usr_uninstall(pc, data.pkg_type, data.pkgid,
-					    PM_QUIET, __return_cb, NULL,uid);
-		if (ret < 0){
+		ret = pkgmgr_client_usr_uninstall(pc, data.pkg_type, data.pkgid,
+				PM_QUIET, __return_cb, NULL, uid);
+		if (ret < 0) {
 			data.result = PKGCMD_ERRCODE_ERROR;
 			if (access(data.pkg_path, F_OK) != 0)
 				data.result = PKGCMD_ERRCODE_PACKAGE_NOT_FOUND;
@@ -648,7 +650,7 @@ static int __process_request(uid_t uid)
 		}
 
 		ret = pkgmgr_client_usr_reinstall(pc, data.pkg_type, data.pkgid, NULL, PM_QUIET, __return_cb, pc, uid);
-		if (ret < 0){
+		if (ret < 0) {
 			data.result = PKGCMD_ERRCODE_ERROR;
 			if (access(data.pkg_path, F_OK) != 0)
 				data.result = PKGCMD_ERRCODE_PACKAGE_NOT_FOUND;
@@ -678,7 +680,7 @@ static int __process_request(uid_t uid)
 			break;
 		}
 		ret = pkgmgr_client_usr_clear_user_data(pc, data.pkg_type,
-						    data.pkgid, PM_QUIET, uid);
+				data.pkgid, PM_QUIET, uid);
 		if (ret < 0)
 			break;
 		ret = data.result;
@@ -700,7 +702,7 @@ static int __process_request(uid_t uid)
 			break;
 		}
 
-		if (strcmp(data.pkg_type, "app") == 0 ) {
+		if (strcmp(data.pkg_type, "app") == 0) {
 			if (data.global)
 				/* enable global app for this user only */
 				ret = pkgmgr_client_activate_global_app_for_uid(pc, data.pkgid, __app_return_cb, getuid());
@@ -742,7 +744,7 @@ static int __process_request(uid_t uid)
 			break;
 		}
 
-		if (strcmp(data.pkg_type, "app") == 0 ) {
+		if (strcmp(data.pkg_type, "app") == 0) {
 			if (data.global)
 				/* disable global app for this user only*/
 				ret = pkgmgr_client_deactivate_global_app_for_uid(pc, data.pkgid, __app_return_cb, getuid());
@@ -840,7 +842,7 @@ static int __process_request(uid_t uid)
 
 		if (data.request == KILLAPP_REQ) {
 			ret = pkgmgr_client_usr_request_service(PM_REQUEST_KILL_APP, 0, pc, NULL, data.pkgid, uid, NULL, NULL, &pid);
-			if (ret < 0){
+			if (ret < 0) {
 				data.result = PKGCMD_ERRCODE_ERROR;
 				break;
 			}
@@ -851,7 +853,7 @@ static int __process_request(uid_t uid)
 
 		} else if (data.request == CHECKAPP_REQ) {
 			ret = pkgmgr_client_usr_request_service(PM_REQUEST_CHECK_APP, 0, pc, NULL, data.pkgid, uid, NULL, NULL, &pid);
-			if (ret < 0){
+			if (ret < 0) {
 				data.result = PKGCMD_ERRCODE_ERROR;
 				break;
 			}
@@ -867,35 +869,39 @@ static int __process_request(uid_t uid)
 	case LIST_REQ:
 		if (data.pkg_type[0] == '\0') {
 			ret = 0;
-			if (uid != GLOBAL_USER) {
+			if (uid != GLOBAL_USER)
 				ret = pkgmgrinfo_pkginfo_get_usr_list(__pkgmgr_list_cb, NULL, uid);
-			} else {
+			else
 				ret = pkgmgrinfo_pkginfo_get_list(__pkgmgr_list_cb, NULL);
-				}
-				if (ret == -1)
-					printf("no packages found\n");
-				break;
+
+			if (ret == -1)
+				printf("no packages found\n");
+			break;
 		} else {
 			pkgmgrinfo_pkginfo_filter_h handle;
+
 			ret = pkgmgrinfo_pkginfo_filter_create(&handle);
 			if (ret == -1) {
 				printf("Failed to get package filter handle\n");
 				break;
 			}
+
 			ret = pkgmgrinfo_pkginfo_filter_add_string(handle, PMINFO_PKGINFO_PROP_PACKAGE_TYPE, data.pkg_type);
 			if (ret == -1) {
 				printf("Failed to add package type filter\n");
 				pkgmgrinfo_pkginfo_filter_destroy(handle);
 				break;
 			}
-			if (uid != GLOBAL_USER) {
+
+			if (uid != GLOBAL_USER)
 				ret = pkgmgrinfo_pkginfo_usr_filter_foreach_pkginfo(handle, __pkgmgr_list_cb, NULL, uid);
-			} else {
+			else
 				ret = pkgmgrinfo_pkginfo_filter_foreach_pkginfo(handle, __pkgmgr_list_cb, NULL);
-			}
-				if (ret != PMINFO_R_OK)
-					printf("no package filter list\n");
-					pkgmgrinfo_pkginfo_filter_destroy(handle);
+
+			if (ret != PMINFO_R_OK)
+				printf("no package filter list\n");
+
+			pkgmgrinfo_pkginfo_filter_destroy(handle);
 			break;
 		}
 
@@ -905,7 +911,8 @@ static int __process_request(uid_t uid)
 		break;
 
 	case CSC_REQ:
-		ret = pkgmgr_client_usr_request_service(PM_REQUEST_CSC, 0, NULL, NULL, NULL, uid, data.des_path, NULL, (void *)data.pkg_path);
+		ret = pkgmgr_client_usr_request_service(PM_REQUEST_CSC, 0, NULL, NULL, NULL, uid,
+				data.des_path, NULL, (void *)data.pkg_path);
 		if (ret < 0)
 			data.result = PKGCMD_ERRCODE_ERROR;
 		break;
@@ -929,8 +936,9 @@ static int __process_request(uid_t uid)
 			ret = pkgmgrinfo_pkginfo_get_usr_list(__pkg_list_cb, (void *)pc, uid);
 			break;
 		}
-		ret = pkgmgr_client_usr_request_service(PM_REQUEST_GET_SIZE, data.type, pc, NULL, data.pkgid, uid, NULL, NULL, NULL);
-		if (ret < 0){
+		ret = pkgmgr_client_usr_request_service(PM_REQUEST_GET_SIZE, data.type,
+				pc, NULL, data.pkgid, uid, NULL, NULL, NULL);
+		if (ret < 0) {
 			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
@@ -951,12 +959,14 @@ static int __process_request(uid_t uid)
 			ret = -1;
 			break;
 		}
+
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
 			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
+
 		ret = pkgmgr_client_usr_add_blacklist(pc, data.pkgid, uid);
 		if (ret < 0) {
 			data.result = PKGCMD_ERRCODE_ERROR;
@@ -973,12 +983,14 @@ static int __process_request(uid_t uid)
 			ret = -1;
 			break;
 		}
+
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
 			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
+
 		ret = pkgmgr_client_usr_remove_blacklist(pc, data.pkgid, uid);
 		if (ret < 0) {
 			data.result = PKGCMD_ERRCODE_ERROR;
@@ -995,12 +1007,14 @@ static int __process_request(uid_t uid)
 			ret = -1;
 			break;
 		}
+
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
 			data.result = PKGCMD_ERRCODE_ERROR;
 			break;
 		}
+
 		ret = pkgmgr_client_usr_check_blacklist(pc, data.pkgid, &blacklist, uid);
 		if (ret < 0) {
 			data.result = PKGCMD_ERRCODE_ERROR;
@@ -1011,6 +1025,7 @@ static int __process_request(uid_t uid)
 			printf("%s is blacklisted\n", data.pkgid);
 		else
 			printf("%s is not blacklisted\n", data.pkgid);
+
 		ret = data.result;
 		break;
 
@@ -1039,7 +1054,6 @@ int main(int argc, char *argv[])
 	struct timeval tv;
 	bool is_root_cmd = false;
 
-
 	if (argc == 1)
 		__print_usage();
 
@@ -1061,7 +1075,7 @@ int main(int argc, char *argv[])
 	memset(data.tep_path, '\0', PATH_MAX);
 	memset(data.tep_move, '\0', PKG_NAME_STRING_LEN_MAX);
 
-	data.global = 0; //By default pkg_cmd will manage for the current user
+	data.global = 0; /* By default pkg_cmd will manage for the current user */
 	data.result = 0;
 	data.type = -1;
 	while (1) {
@@ -1156,9 +1170,9 @@ int main(int argc, char *argv[])
 		case 'X':  /* old_tpk */
 			data.request = CREATE_DELTA;
 			is_root_cmd = true;
-			if (optarg) {
+			if (optarg)
 				strncpy(data.pkg_old, optarg, PATH_MAX - 1);
-			}
+
 			if (realpath(data.pkg_old, data.resolved_path_pkg_old) == NULL) {
 				printf("failed to set realpath\n");
 				return -1;
@@ -1167,9 +1181,9 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'Y':  /* new_tpk */
-			if (optarg) {
+			if (optarg)
 				strncpy(data.pkg_new, optarg, PATH_MAX - 1);
-			}
+
 			if (realpath(data.pkg_new, data.resolved_path_pkg_new) == NULL) {
 				printf("failed to set realpath\n");
 				return -1;
@@ -1178,15 +1192,15 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'Z':  /* delta_tpk */
-			if (optarg) {
+			if (optarg)
 				strncpy(data.delta_pkg, optarg, PATH_MAX - 1);
-			}
+
 			printf("delta_pkg is %s\n", data.delta_pkg);
 			if (realpath(data.delta_pkg, data.resolved_path_delta_pkg) == NULL) {
 				printf("failed to set realpath\n");
 				return -1;
 			}
-			printf("delta_pkg abs path is %s\n",data.resolved_path_delta_pkg);
+			printf("delta_pkg abs path is %s\n", data.resolved_path_delta_pkg);
 			break;
 		case 'd':  /* descriptor path */
 			if (optarg)
@@ -1214,7 +1228,8 @@ int main(int argc, char *argv[])
 
 		case 'M':  /*tep move*/
 			if (optarg)
-				strncpy(data.tep_move, (atoi(optarg) == 1)?"tep_move":"tep_copy", PKG_NAME_STRING_LEN_MAX - 1);
+				strncpy(data.tep_move, (atoi(optarg) == 1) ? "tep_move" : "tep_copy",
+						PKG_NAME_STRING_LEN_MAX - 1);
 			break;
 
 		case 't':  /* package type */
@@ -1271,19 +1286,21 @@ int main(int argc, char *argv[])
 
 		}
 	}
+
 	uid_t uid = getuid();
-	if(!is_root_cmd && uid == OWNER_ROOT) {
+	if (!is_root_cmd && uid == OWNER_ROOT) {
 		printf("Current User is Root! : Only regular users are allowed\n");
 		return -1;
 	}
-	if(data.global == 1) {
+
+	if (data.global == 1)
 		uid = GLOBAL_USER;
-	}
+
 	ret = __process_request(uid);
 	if ((ret < 0) && (data.result == 0)) {
-                printf("Undefined error(%d)", ret);
+		printf("Undefined error(%d)", ret);
 		data.result = PKGCMD_ERRCODE_UNDEFINED_ERROR;
-        }
+	}
 
 	if (ret != 0) {
 		__error_no_to_string(data.result, &errstr);

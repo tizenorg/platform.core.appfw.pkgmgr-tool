@@ -20,14 +20,14 @@
 #ifndef DELTA_H_
 #define DELTA_H_
 
-#define DIFF_FILE 			"/opt/usr/temp_delta/difffile.txt"
-#define TEMP_DELTA_REPO 		"/opt/usr/temp_delta/"
-#define UNZIPFILE 			"_FILES"
-#define MAX_MESSAGE_LEN 1024
-#define BUF_SIZE 1024
+#define DIFF_FILE		"/opt/usr/temp_delta/difffile.txt"
+#define TEMP_DELTA_REPO		"/opt/usr/temp_delta/"
+#define UNZIPFILE		"_FILES"
+#define MAX_MESSAGE_LEN	1024
+#define BUF_SIZE	1024
 char message[MAX_MESSAGE_LEN];
 
-void __create_diff_file(char * old_tpk_path, char * new_tpk_path);
+void __create_diff_file(char *old_tpk_path, char *new_tpk_path);
 int __xsystem(const char *argv[]);
 
 #endif /* DELTA_H_ */
