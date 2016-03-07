@@ -1039,7 +1039,6 @@ int main(int argc, char *argv[])
 	struct timeval tv;
 	bool is_root_cmd = false;
 
-
 	if (argc == 1)
 		__print_usage();
 

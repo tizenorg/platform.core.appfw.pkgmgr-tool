@@ -85,12 +85,12 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 	int ret;
 	DIR *dir;
 	struct dirent *dent;
-	const char *entry;
+	const char *file_info;
 
 	if (include_itself) {
 		ret = fstat(dfd, &st);
 		if (ret < 0) {
-			ERR("fstat() failed, entry: ., errno: %d (%s)", errno,
+			ERR("fstat() failed, file_info: ., errno: %d (%s)", errno,
 					strerror(errno));
 			return -1;
 		}
@@ -105,30 +105,30 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 	}
 
 	while ((dent = readdir(dir))) {
-		entry = dent->d_name;
-		if (entry[0] == '.') {
-			if (entry[1] == '\0')
+		file_info = dent->d_name;
+		if (file_info[0] == '.') {
+			if (file_info[1] == '\0')
 				continue;
-			if ((entry[1] == '.') && (entry[2] == '\0'))
+			if ((file_info[1] == '.') && (file_info[2] == '\0'))
 				continue;
 		}
 
 		if (dent->d_type == DT_DIR) {
-			subfd = openat(dfd, entry, O_RDONLY | O_DIRECTORY);
+			subfd = openat(dfd, file_info, O_RDONLY | O_DIRECTORY);
 			if (subfd < 0) {
-				ERR("openat() failed, entry:%s, errno: %d(%s)",
-						entry, errno, strerror(errno));
+				ERR("openat() failed, file_info:%s, errno: %d(%s)",
+						file_info, errno, strerror(errno));
 				goto error;
 			}
 
-			DBG("traverse entry: %s", entry);
+			DBG("traverse file_info: %s", file_info);
 			size += __calculate_directory_size(subfd, true);
 			close(subfd);
 		} else {
-			ret = fstatat(dfd, entry, &st, AT_SYMLINK_NOFOLLOW);
+			ret = fstatat(dfd, file_info, &st, AT_SYMLINK_NOFOLLOW);
 			if (ret < 0) {
-				ERR("fstatat() failed, entry:%s, errno: %d(%s)",
-						entry, errno, strerror(errno));
+				ERR("fstatat() failed, file_info:%s, errno: %d(%s)",
+						file_info, errno, strerror(errno));
 				goto error;
 			}
 			size += __stat_size(&st);
@@ -184,7 +184,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		DBG("data_size: %lld", *data_size);
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
-		ERR("openat() failed, entry: data, errno: %d (%s)",
+		ERR("openat() failed, file_info: data, errno: %d (%s)",
 				errno, strerror(errno));
 		goto error;
 	}
@@ -202,7 +202,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		DBG("data_size: %lld", *data_size);
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
-		DBG("openat() failed, entry: trusted, errno: %d (%s)",
+		DBG("openat() failed, file_info: trusted, errno: %d (%s)",
 				errno, strerror(errno));
 		goto error;
 	}
@@ -220,7 +220,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		DBG("app_size: %lld", *app_size);
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
-		ERR("openat() failed, entry: res, errno: %d (%s)",
+		ERR("openat() failed, file_info: res, errno: %d (%s)",
 				errno, strerror(errno));
 		goto error;
 	}
@@ -238,7 +238,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		DBG("data_size: %lld", *data_size);
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
-		ERR("openat() failed, entry: data, errno: %d (%s)",
+		ERR("openat() failed, file_info: data, errno: %d (%s)",
 				errno, strerror(errno));
 		goto error;
 	}
