@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <wait.h>
 
 #include <tzplatform_config.h>
 
