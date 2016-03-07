@@ -78,7 +78,7 @@ static int _install_preload_tpk(uid_t uid, const char *directory)
 				return -1;
 			}
 			execl(BACKEND_CMD, BACKEND_CMD, "-i", buf, "--preload",
-			      (char*)NULL);
+			      (char *)NULL);
 		} else if (pid < 0) {
 			_E("failed to fork and execute %s!", BACKEND_CMD);
 			closedir(dir);
