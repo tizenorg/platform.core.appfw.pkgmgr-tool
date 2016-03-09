@@ -67,7 +67,7 @@ static int __convert_to_absolute_path(char *path);
 
 /* Supported options */
 /* Note: 'G' is reserved */
-const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:qh";
+const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:qhG";
 const struct option long_options[] = {
 	{"install", 0, NULL, 'i'},
 	{"uninstall", 0, NULL, 'u'},
@@ -101,6 +101,7 @@ const struct option long_options[] = {
 	{"add-blacklist", 1, NULL, OPTVAL_ADD_BLACKLIST},
 	{"remove-blacklist", 1, NULL, OPTVAL_REMOVE_BLACKLIST},
 	{"check-blacklist", 1, NULL, OPTVAL_CHECK_BLACKLIST},
+	{"debug-mode", 0, NULL, 'G'},
 	{0, 0, 0, 0}		/* sentinel */
 };
 
@@ -448,6 +449,7 @@ static void __print_usage()
 	printf("--add-blacklist         add a package to blacklist\n");
 	printf("--remove-blacklist      remove a package from blacklist\n");
 	printf("--check-blacklist       check if the given package is blacklisted\n");
+	printf("-G, --debug-mode	install the package with debug mode for sdk\n");
 	printf("-h, --help	.	print this help\n\n");
 
 	printf("Usage: pkgcmd [options]\n");
@@ -1266,6 +1268,9 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'q':  /* quiet mode is removed */
+			break;
+
+		case 'G':  /* debug mode */
 			break;
 
 		case OPTVAL_ADD_BLACKLIST:
