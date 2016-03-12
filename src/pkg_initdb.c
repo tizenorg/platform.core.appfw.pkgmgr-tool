@@ -26,6 +26,8 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <errno.h>
 
 #include <pkgmgr_parser.h>
@@ -84,7 +86,12 @@ static int _initdb_load_directory(uid_t uid, const char *directory)
 
 		pid_t pid = fork();
 		if (pid == 0) {
-			setuid(uid);
+			if (setuid(uid) != 0) {
+				_E("failed to set uid");
+				closedir(dir);
+				return -1;
+			}
+
 			execl(PKGINSTALLMANIFEST_CMD, PKGINSTALLMANIFEST_CMD, "-x", buf,
 			      (char*)NULL);
 		} else if (pid < 0) {
