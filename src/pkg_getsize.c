@@ -82,14 +82,15 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 	int subfd;
 	int ret;
 	DIR *dir;
-	struct dirent *dent;
+	struct dirent dent, *result;
 	const char *file_info;
+	char buf[1024] = {0, };
 
 	if (include_itself) {
 		ret = fstat(dfd, &st);
 		if (ret < 0) {
 			ERR("fstat() failed, file_info: ., errno: %d (%s)", errno,
-					strerror(errno));
+					strerror_r(errno, buf, sizeof(buf)));
 			return -1;
 		}
 		size += __stat_size(&st);
@@ -98,12 +99,14 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 	dir = fdopendir(dfd);
 	if (dir == NULL) {
 		ERR("fdopendir() failed, errno: %d (%s)", errno,
-				strerror(errno));
+				strerror_r(errno, buf, sizeof(buf)));
 		return -1;
 	}
 
-	while ((dent = readdir(dir))) {
-		file_info = dent->d_name;
+	for (ret = readdir_r(dir, &dent, &result);
+			ret == 0 && result != NULL;
+			ret = readdir_r(dir, &dent, &result)) {
+		file_info = dent.d_name;
 		if (file_info[0] == '.') {
 			if (file_info[1] == '\0')
 				continue;
@@ -111,11 +114,11 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 				continue;
 		}
 
-		if (dent->d_type == DT_DIR) {
+		if (dent.d_type == DT_DIR) {
 			subfd = openat(dfd, file_info, O_RDONLY | O_DIRECTORY);
 			if (subfd < 0) {
 				ERR("openat() failed, file_info:%s, errno: %d(%s)",
-						file_info, errno, strerror(errno));
+						file_info, errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
 
@@ -126,7 +129,7 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 			ret = fstatat(dfd, file_info, &st, AT_SYMLINK_NOFOLLOW);
 			if (ret < 0) {
 				ERR("fstatat() failed, file_info:%s, errno: %d(%s)",
-						file_info, errno, strerror(errno));
+						file_info, errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
 			size += __stat_size(&st);
@@ -149,20 +152,21 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 	long long size = 0;
 	struct stat st;
 	int ret;
+	char buf[1024] = {0, };
 
 	DBG("traverse path: %s/shared", app_root_dir);
 
 	fd = openat(dfd, "shared", O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
 		ERR("openat() failed, path: %s/shared, errno: %d (%s)",
-				app_root_dir, errno, strerror(errno));
+				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
 		return -1;
 	}
 
 	ret = fstat(fd, &st);
 	if (ret < 0) {
 		ERR("fstat() failed, path: %s/shared, errno: %d (%s)",
-				app_root_dir, errno, strerror(errno));
+				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 	*app_size += __stat_size(&st);  /* shared directory */
@@ -182,7 +186,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
 		ERR("openat() failed, file_info: data, errno: %d (%s)",
-				errno, strerror(errno));
+				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
@@ -200,7 +204,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
 		DBG("openat() failed, file_info: trusted, errno: %d (%s)",
-				errno, strerror(errno));
+				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
@@ -218,7 +222,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
 		ERR("openat() failed, file_info: res, errno: %d (%s)",
-				errno, strerror(errno));
+				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
@@ -236,7 +240,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
 		ERR("openat() failed, file_info: data, errno: %d (%s)",
-				errno, strerror(errno));
+				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
@@ -263,12 +267,13 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 {
 	uid_t uid = getuid();
 	char app_root_dir[MAX_PATH_LENGTH] = {0, };
+	char buf[1024] = {0, };
 	DIR *dir;
 	int dfd;
 	int subfd = -1;
 	struct stat st;
 	int ret;
-	struct dirent *ent;
+	struct dirent ent, *result;
 	long long size = 0;
 
 	if (type == STORAGE_TYPE_INTERNAL) {
@@ -291,7 +296,7 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 	dir = opendir(app_root_dir);
 	if (dir == NULL) {
 		ERR("opendir() failed, path: %s, errno: %d (%s)",
-				app_root_dir, errno, strerror(errno));
+				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
 		return -1;
 	}
 
@@ -299,13 +304,14 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 	ret = fstat(dfd, &st);
 	if (ret < 0) {
 		ERR("fstat() failed, path: %s, errno: %d (%s)", app_root_dir,
-				errno, strerror(errno));
+				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 	*app_size += __stat_size(&st);
-
-	while ((ent = readdir(dir))) {
-		const char *name = ent->d_name;
+	for (ret = readdir_r(dir, &ent, &result);
+			ret == 0 && result != NULL;
+			ret = readdir_r(dir, &ent, &result)) {
+		const char *name = ent.d_name;
 		if (name[0] == '.') {
 			if (name[1] == '\0')
 				continue;
@@ -313,14 +319,14 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 				continue;
 		}
 
-		if (ent->d_type != DT_DIR)
+		if (ent.d_type != DT_DIR)
 			continue;
 
 		subfd = openat(dfd, name, O_RDONLY | O_DIRECTORY);
 		if (subfd < 0) {
 			if (errno != ENOENT) {
 				ERR("openat() failed, errno: %d (%s)",
-						errno, strerror(errno));
+						errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
 			continue;
