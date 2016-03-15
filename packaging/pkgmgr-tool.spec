@@ -58,6 +58,18 @@ chsmack -a '*' %{TZ_SYS_RW_PACKAGES}
 %posttrans
 pkg_initdb
 install_preload_tpk
+if [ -d /tmp/.preload-tpk/.error ]
+then
+  if [ ! -d /tmp/.postscript ]
+  then
+    mkdir /tmp/.postscript
+  fi
+  if [ ! -d /tmp/.postscript/error ]
+  then
+    mkdir /tmp/.postscript/error
+  fi
+  echo "preload install failed" > /tmp/.postscript/error/%{name}_error
+fi
 
 %files
 %manifest %{name}.manifest
