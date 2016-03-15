@@ -139,21 +139,24 @@ static void _remove_old_dbs(uid)
 	info_db_journal_path = tzplatform_mkpath(
 			_is_global(uid) ? TZ_SYS_DB : TZ_USER_DB,
 			".pkgmgr_parser.db-journal");
-	cert_db_path = tzplatform_mkpath(
-			_is_global(uid) ? TZ_SYS_DB : TZ_USER_DB,
-			".pkgmgr_cert.db");
-	cert_db_journal_path = tzplatform_mkpath(
-			_is_global(uid) ? TZ_SYS_DB : TZ_USER_DB,
-			".pkgmgr_cert.db-journal");
-
 	if (remove(info_db_path))
 		_E(" %s is not removed", info_db_path);
 	if (remove(info_db_journal_path))
 		_E(" %s is not removed", info_db_journal_path);
-	if (remove(cert_db_path))
-		_E(" %s is not removed", cert_db_path);
-	if (remove(cert_db_journal_path))
-		_E(" %s is not removed", cert_db_journal_path);
+
+	if (_is_global(uid)) {
+		cert_db_path = tzplatform_mkpath(
+				_is_global(uid) ? TZ_SYS_DB : TZ_USER_DB,
+				".pkgmgr_cert.db");
+		cert_db_journal_path = tzplatform_mkpath(
+				_is_global(uid) ? TZ_SYS_DB : TZ_USER_DB,
+				".pkgmgr_cert.db-journal");
+
+		if (remove(cert_db_path))
+			_E(" %s is not removed", cert_db_path);
+		if (remove(cert_db_journal_path))
+			_E(" %s is not removed", cert_db_journal_path);
+	}
 
 	tzplatform_reset_user();
 }
@@ -172,6 +175,11 @@ int main(int argc, char *argv[])
 
 	if (argc > 1)
 		uid = (uid_t)atoi(argv[1]);
+
+	if (uid != 0) {
+		_E("Not supported for non-authorized user!");
+		return -1;
+	}
 
 	_remove_old_dbs(uid);
 
