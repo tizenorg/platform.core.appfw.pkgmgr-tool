@@ -49,7 +49,8 @@ static int __clear_dir(const char *dirname)
 {
 	int ret = 0;
 	DIR *dp = NULL;
-	struct dirent *ep = NULL;
+	char buf[1024] = {0, };
+	struct dirent ep, *result;
 	char *abs_filename = NULL;
 	struct stat stFileInfo;
 
@@ -64,18 +65,21 @@ static int __clear_dir(const char *dirname)
 	dp = opendir(dirname);
 	if (dp == NULL) {
 		LOGE("Couldn't open the directory. errno : %d (%s)\n", errno,
-				strerror(errno));
+				strerror_r(errno, buf, sizeof(buf)));
 		goto err;
 	}
-	while ((ep = readdir(dp))) {
+
+	for (ret = readdir_r(dp, &ep, &result);
+			ret == 0 && result != NULL;
+			ret = readdir_r(dp, &ep, &result)) {
 		snprintf(abs_filename, PATH_MAX - 1, "%s/%s", dirname,
-				ep->d_name);
+				ep.d_name);
 		if (lstat(abs_filename, &stFileInfo) < 0)
 			perror(abs_filename);
 
 		if (S_ISDIR(stFileInfo.st_mode)) {
-			if (strcmp(ep->d_name, ".") &&
-					strcmp(ep->d_name, "..")) {
+			if (strcmp(ep.d_name, ".") &&
+					strcmp(ep.d_name, "..")) {
 				ret = __clear_dir(abs_filename);
 				if (ret != 0)
 					LOGE("Couldn't remove the directory. "
