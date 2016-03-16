@@ -47,8 +47,6 @@ static int __get_pkg_list(uid_t uid);
 static int __get_installed_app_list(uid_t uid);
 static int __add_app_filter(uid_t uid);
 static int __add_pkg_filter(uid_t uid);
-static int __insert_manifest_in_db(char *manifest, uid_t uid);
-static int __remove_manifest_from_db(char *manifest, uid_t uid);
 static int __set_certinfo_in_db(char *pkgid, uid_t uid);
 static int __get_certinfo_from_db(char *pkgid, uid_t uid);
 static int __del_certinfo_from_db(char *pkgid);
@@ -1350,61 +1348,6 @@ err:
 	return ret;
 }
 
-static int __insert_manifest_in_db(char *manifest, uid_t uid)
-{
-	int ret = 0;
-	if (manifest == NULL) {
-		printf("Manifest file is NULL\n");
-		return -1;
-	}
-	if (uid == GLOBAL_USER || uid == OWNER_ROOT)
-		ret = pkgmgr_parser_parse_manifest_for_installation(manifest, NULL);
-	else
-		ret = pkgmgr_parser_parse_usr_manifest_for_installation(manifest, uid, NULL);
-	if (ret < 0) {
-		printf("insert in db failed\n");
-		return -1;
-	}
-	return 0;
-}
-
-static int __fota_insert_manifest_in_db(char *manifest, uid_t uid)
-{
-	int ret = 0;
-
-	if (manifest == NULL) {
-		printf("Manifest file is NULL\n");
-		return -1;
-	}
-	if (uid != GLOBAL_USER)
-		ret = pkgmgr_parser_parse_usr_manifest_for_installation(manifest, uid, NULL);
-	else
-		ret = pkgmgr_parser_parse_manifest_for_installation(manifest, NULL);
-	if (ret < 0) {
-		printf("insert in db failed\n");
-		return -1;
-	}
-	return 0;
-}
-
-static int __remove_manifest_from_db(char *manifest, uid_t uid)
-{
-	int ret = 0;
-	if (manifest == NULL) {
-		printf("Manifest file is NULL\n");
-		return -1;
-	}
-	if (uid != GLOBAL_USER)
-		ret = pkgmgr_parser_parse_usr_manifest_for_uninstallation(manifest, uid, NULL);
-	else
-		ret = pkgmgr_parser_parse_manifest_for_uninstallation(manifest, NULL);
-	if (ret < 0) {
-		printf("remove from db failed\n");
-		return -1;
-	}
-	return 0;
-}
-
 int app_func(const pkgmgrinfo_appinfo_h handle, void *user_data)
 {
 	int ret = -1;
@@ -2079,23 +2022,14 @@ int main(int argc, char *argv[])
 			goto end;
 		}
 	} else if (strcmp(argv[1], "--imd") == 0) {
-		ret = __insert_manifest_in_db(argv[2], getuid());
-		if (ret == -1) {
-			printf("insert in db failed\n");
-			goto end;
-		}
+		printf("Not supported!\n");
+		goto end;
 	} else if (strcmp(argv[1], "--fota") == 0) {
-		ret = __fota_insert_manifest_in_db(argv[2], getuid());
-		if (ret == -1) {
-			printf("insert in db failed\n");
-			goto end;
-		}
+		printf("Not supported!\n");
+		goto end;
 	} else if (strcmp(argv[1], "--rmd") == 0) {
-		ret = __remove_manifest_from_db(argv[2], getuid());
-		if (ret == -1) {
-			printf("remove from db failed\n");
-			goto end;
-		}
+		printf("Not supported!\n");
+		goto end;
 	} else if (strcmp(argv[1], "--setcert") == 0) {
 		ret = __set_certinfo_in_db(argv[2], getuid());
 		if (ret == -1) {
