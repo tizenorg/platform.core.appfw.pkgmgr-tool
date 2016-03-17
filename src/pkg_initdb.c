@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 		dir_rw = tzplatform_getenv(TZ_SYS_RW_PACKAGES);
 		if (dir && dir_rw)
 			if (strcmp(dir, dir_rw))
-				ret = _initdb_load_directory(uid, dir);
+				ret = _initdb_load_directory(uid, dir_rw);
 	} else {
 		/* specified user location */
 		tzplatform_set_user(uid);
