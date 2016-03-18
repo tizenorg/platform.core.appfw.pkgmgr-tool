@@ -96,6 +96,8 @@ static int _initdb_load_directory(uid_t uid, const char *directory)
 
 			execl(PKGINSTALLMANIFEST_CMD, PKGINSTALLMANIFEST_CMD, "-x", buf,
 			      (char *)NULL);
+			_E("failed to execute: %s", strerror_r(errno, buf, sizeof(buf)));
+			exit(EXIT_FAILURE);
 		} else if (pid < 0) {
 			_E("failed to fork and execute %s!", PKGINSTALLMANIFEST_CMD);
 			closedir(dir);
