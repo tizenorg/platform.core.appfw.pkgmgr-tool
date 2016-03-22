@@ -64,9 +64,11 @@ static int _is_global(uid_t uid)
 static int _initdb_load_directory(uid_t uid, const char *directory)
 {
 	DIR *dir;
-	struct dirent file_info, *result;
-	int ret;
+	struct dirent file_info;
+	struct dirent *result;
 	char buf[BUFSZE];
+	pid_t pid;
+	int status;
 
 	dir = opendir(directory);
 	if (!dir) {
@@ -77,16 +79,17 @@ static int _initdb_load_directory(uid_t uid, const char *directory)
 
 	_D("Loading manifest files from %s", directory);
 
-	for (ret = readdir_r(dir, &file_info, &result);
-			ret == 0 && result != NULL;
-			ret = readdir_r(dir, &file_info, &result)) {
-		if (file_info.d_name[0] == '.')
+	while (readdir_r(dir, &file_info, &result) == 0) {
+		if (result == NULL)
+			break;
+		if (file_info.d_type != DT_REG)
 			continue;
 
-		snprintf(buf, sizeof(buf), "%s/%s", directory, file_info.d_name);
+		snprintf(buf, sizeof(buf), "%s/%s", directory,
+				file_info.d_name);
 		_D("manifest file %s", buf);
 
-		pid_t pid = fork();
+		pid = fork();
 		if (pid == 0) {
 			if (setuid(uid) != 0) {
 				_E("failed to set uid");
@@ -94,17 +97,17 @@ static int _initdb_load_directory(uid_t uid, const char *directory)
 				return -1;
 			}
 
-			execl(PKGINSTALLMANIFEST_CMD, PKGINSTALLMANIFEST_CMD, "-x", buf,
-			      (char *)NULL);
-			_E("failed to execute: %s", strerror_r(errno, buf, sizeof(buf)));
+			execl(PKGINSTALLMANIFEST_CMD, PKGINSTALLMANIFEST_CMD,
+					"-x", buf, (char *)NULL);
+			_E("failed to execute: %s",
+					strerror_r(errno, buf, sizeof(buf)));
 			exit(EXIT_FAILURE);
 		} else if (pid < 0) {
-			_E("failed to fork and execute %s!", PKGINSTALLMANIFEST_CMD);
+			_E("failed to fork and execute %s!",
+					PKGINSTALLMANIFEST_CMD);
 			closedir(dir);
 			return -1;
-		}
-		if (pid > 0) {
-			int status = 0;
+		} else {
 			waitpid(pid, &status, 0);
 		}
 	}
