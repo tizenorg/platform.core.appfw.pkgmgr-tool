@@ -1410,9 +1410,11 @@ int app_func(const pkgmgrinfo_appinfo_h handle, void *user_data)
 	if (apptype)
 		printf("Apptype: %s\n", apptype);
 
-	if (component == PMINFO_UI_APP || component == PMINFO_WIDGET_APP) {
-		printf("component: %s\n", component == PMINFO_UI_APP ? "uiapp" :
-				"widgetapp");
+	if (component == PMINFO_UI_APP || component == PMINFO_WIDGET_APP ||
+		component == PMINFO_WATCH_APP) {
+		printf("component: %s\n", component == PMINFO_UI_APP ?
+			"uiapp" : component == PMINFO_WIDGET_APP ?
+			"widgetapp" : "watchapp");
 		ret = pkgmgrinfo_appinfo_is_multiple(handle, &multiple);
 		if (ret < 0)
 			printf("Failed to get multiple\n");
@@ -1839,15 +1841,15 @@ static int __get_app_info(char *appid)
 	if (apptype)
 		printf("Apptype: %s\n", apptype);
 
-	if (component == PMINFO_UI_APP || component == PMINFO_WIDGET_APP) {
-		printf("component: %s\n", component == PMINFO_UI_APP ? "uiapp" :
-				"widgetapp");
-
+	if (component == PMINFO_UI_APP || component == PMINFO_WIDGET_APP ||
+		component == PMINFO_WATCH_APP) {
+		printf("component: %s\n", component == PMINFO_UI_APP ?
+			"uiapp" : component == PMINFO_WIDGET_APP ?
+			"widgetapp": "watchapp");
 		if (icon)
 			printf("Icon: %s\n", icon);
 		if (label)
 			printf("Label: %s\n", label);
-
 		printf("Nodisplay: %d\n", nodisplay);
 		printf("Multiple: %d\n", multiple);
 		printf("Taskmanage: %d\n", taskmanage);
