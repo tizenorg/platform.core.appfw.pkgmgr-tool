@@ -73,7 +73,7 @@ INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/mime.tpk.xml DESTINATION /usr/sha
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/data/pkgmgr.patch.sh.in pkgmgr.patch.sh @ONLY)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pkgmgr.patch.sh DESTINATION ${SYSCONF_INSTALL_DIR}/opt/upgrade/)
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/data/pkgmgr-unzip-tpk.sh.in pkgmgr-unzip-tpk.sh @ONLY)
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pkgmgr-unzip-tpk.sh DESTINATION ${SYSCONF_INSTALL_DIR}/package-manager/)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/data/pkgmgr-unzip-pkg.sh.in pkgmgr-unzip-pkg.sh @ONLY)
+INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pkgmgr-unzip-pkg.sh DESTINATION ${SYSCONF_INSTALL_DIR}/package-manager/)
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/data/pkgmgr-create-delta.sh.in pkgmgr-create-delta.sh @ONLY)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pkgmgr-create-delta.sh DESTINATION ${SYSCONF_INSTALL_DIR}/package-manager/)

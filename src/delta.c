@@ -247,6 +247,14 @@ void __create_diff_file(char *old_tpk_path, char *new_tpk_path)
 								rel_path_new_tpk_file);
 						__print_to_file(message);
 					}
+					else
+					{
+						 snprintf(message, MAX_MESSAGE_LEN,
+								  "Files %s and %s are the same",
+								  rel_path_old_tpk_file,
+								  rel_path_new_tpk_file);
+						 __print_to_file(message);
+					}
 				}
 				list_dir_new_tpk = g_list_delete_link(list_dir_new_tpk,
 						iterator_new_tpk);
