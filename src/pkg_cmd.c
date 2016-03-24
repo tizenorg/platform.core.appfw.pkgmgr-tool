@@ -563,7 +563,7 @@ static int __process_request(uid_t uid)
 			snprintf(data.resolved_path_delta_pkg, PATH_MAX, "/tmp/delta_pkg");
 			printf("output file will be /tmp/delta_pkg.delta\n");
 		}
-		const char *unzip_argv[] = {"sh", "/etc/package-manager/pkgmgr-unzip-tpk.sh", "-a",
+		const char *unzip_argv[] = {"sh", "/etc/package-manager/pkgmgr-unzip-pkg.sh", "-a",
 				data.resolved_path_pkg_old, "-b", data.resolved_path_pkg_new, "-p",
 				data.resolved_path_delta_pkg, NULL};
 		ret = __xsystem(unzip_argv);
@@ -572,23 +572,23 @@ static int __process_request(uid_t uid)
 			return ret;
 		}
 		printf("unzip is success .\n");
-		char *ptr_old_tpk = NULL;
-		ptr_old_tpk = strrchr(data.resolved_path_pkg_old, '/');
-		if (!ptr_old_tpk) {
-			printf("not able to extract tpk name.\n");
+		char *ptr_old_pkg = NULL;
+		ptr_old_pkg = strrchr(data.resolved_path_pkg_old, '/');
+		if (!ptr_old_pkg) {
+			printf("not able to extract package name.\n");
 			break;
 		}
-		ptr_old_tpk++;
-		char *ptr_new_tpk = NULL;
-		ptr_new_tpk = strrchr(data.resolved_path_pkg_new, '/');
-		if (!ptr_new_tpk) {
-			printf("not able to extract tpk name.\n");
+		ptr_old_pkg++;
+		char *ptr_new_pkg = NULL;
+		ptr_new_pkg = strrchr(data.resolved_path_pkg_new, '/');
+		if (!ptr_new_pkg) {
+			printf("not able to extract package name.\n");
 			break;
 		}
-		ptr_new_tpk++;
+		ptr_new_pkg++;
 
-		snprintf(pkg_old, PATH_MAX, "%s%s%s", TEMP_DELTA_REPO, ptr_old_tpk, UNZIPFILE);
-		snprintf(pkg_new, PATH_MAX, "%s%s%s", TEMP_DELTA_REPO, ptr_new_tpk, UNZIPFILE);
+		snprintf(pkg_old, PATH_MAX, "%s%s%s", TEMP_DELTA_REPO, ptr_old_pkg, UNZIPFILE);
+		snprintf(pkg_new, PATH_MAX, "%s%s%s", TEMP_DELTA_REPO, ptr_new_pkg, UNZIPFILE);
 		__create_diff_file(pkg_old, pkg_new);
 
 		const char *delta_argv[] = {"sh", "/etc/package-manager/pkgmgr-create-delta.sh", "-a",

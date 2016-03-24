@@ -4,22 +4,22 @@ usage()
     cat <<EOF
 usage:
     $1
-	-a|--old_tpk=<old_tpk>
-	-b|--new_tpk=<new_tpk>
-	-p|--delta_tpk=<delta_tpk>
+	-a|--old_pkg=<old_pkg>
+	-b|--new_pkg=<new_pkg>
+	-p|--delta_pkg=<delta_pkg>
 	[-o|--option=<option>]
 	[-h|--help]
 Mandatory args:
- -a|--old_tpk		full/absolute delta_tpk of old_tpk
- -b|--new_tpk		full/absolute delta_tpk of new_tpk
- -p|--delta_tpk		delta_tpk for delta dir
+ -a|--old_pkg		full/absolute delta_pkg of old_pkg
+ -b|--new_pkg		full/absolute delta_pkg of new_pkg
+ -p|--delta_pkg		delta_pkg for delta dir
 Optional args:
  -h,--help			print this help
 EOF
   return 0
 }
 
-options=$(getopt -o hp:a:b:p: -l help,old_tpk:,new_tpk:,delta_tpk: -- "$@")
+options=$(getopt -o hp:a:b:p: -l help,old_pkg:,new_pkg:,delta_pkg: -- "$@")
 if [ $? -ne 0 ]; then
     usage $(basename $0)
     exit 1
@@ -30,21 +30,21 @@ while true
 do
     case "$1" in
         -h|--help)		usage $0 && exit 0;;
-        -a|--old_tpk)	old_tpk=$2; shift 2;;
-        -b|--new_tpk)	new_tpk=$2; shift 2;;
-        -p|--delta_tpk)	delta_tpk=$2; shift 2;;
+        -a|--old_pkg)	old_pkg=$2; shift 2;;
+        -b|--new_pkg)	new_pkg=$2; shift 2;;
+        -p|--delta_pkg)	delta_pkg=$2; shift 2;;
         --)             shift 1; break ;;
         *)              break ;;
     esac
 done
 
-if [ -z "$old_tpk" ]; then
-    echo "'old_tpk' parameter is required"
+if [ -z "$old_pkg" ]; then
+    echo "'old_pkg' parameter is required"
     exit 1
 fi
 
-if [ -z "$new_tpk" ]; then
-    echo "'new_tpk' parameter is required"
+if [ -z "$new_pkg" ]; then
+    echo "'new_pkg' parameter is required"
     exit 1
 fi
 
@@ -98,8 +98,8 @@ which()
 	return $ES
 }
 
-old_tpk_unzip_path=$temp_delta_repo`basename $old_tpk`$outpath
-new_tpk_unzip_path=$temp_delta_repo`basename $new_tpk`$outpath
+old_pkg_unzip_path=$temp_delta_repo`basename $old_pkg`$outpath
+new_pkg_unzip_path=$temp_delta_repo`basename $new_pkg`$outpath
 sample_delta=$temp_delta_repo$temp_delta_dir
 
 while read line
@@ -138,61 +138,86 @@ fi
 
 while read line
 	do
-	if [[ "$line" =~ "differ" ]]; then
-		count=0
-		for word in $line
-			do
-			count=$((count+1));
-			#echo $word
-			if [ $count -eq 2 ]; then
-				file1=$word;
-				#echo "file1 delta_tpk "$file1
-			elif [ $count -eq 4 ]; then
-				file2=$word;
-				#echo "file2 delta_tpk "$file2
-			fi
-			done
-			parent_path=${file1##*$old_tpk_unzip_path}
+	count=0
+	action="none"
+	for word in $line
+		do
+		count=$((count+1));
+		if [ $count -eq 1 ]; then
+			 action="only"
+		elif [ $count -eq 2 ]; then
+			file1=$word;
+		elif [ $count -eq 4 ]; then
+			file2=$word;
+		elif [ $count -eq 5 ]; then
+			action="differ"
+		elif [ $count -eq 6 ]; then
+			action="same"
+		fi
+		done
+	if [[ "$action" =~ "same" ]]; then
+		if [[ "$file2" =~ "config.xml" || "$file2" =~ "tizen-manifest.xml" ]]; then
+			parent_path=${file2##*$new_pkg_unzip_path}
 			filepath=`basename $parent_path`
 			dirpath=`dirname $parent_path`
-			#echo "dirpath "$dirpath
-			#echo "filepath "$filepath
-			if [[ "$line" =~ "tizen-manifest.xml"  || "$line" =~ "signature1.xml" || "$line" =~ "author-signature.xml" ]] ; then
-				if ! mkdir -p $sample_delta$dirpath; then
-					echo "FAIL: mkdir failed !" >&2
-					cleanup
-					exit 1
-				fi
-				if ! cp -r $new_tpk_unzip_path/$dirpath/$filepath $sample_delta/$dirpath/$filepath; then
-					echo "FAIL: cp failed !" >&2
-					cleanup
-					exit 1
-				fi
-			else
-				if ! mkdir -p $sample_delta$dirpath; then
-					echo "FAIL: mkdir failed!" >&2
-					cleanup
-					exit 1
-				fi
-				if ! xdelta3 -e -s $file1 $file2 $sample_delta$dirpath/$filepath; then
-					echo "FAIL: xdelta3 failed!" >&2
-					cleanup
-					exit 1
-				fi
+			if ! mkdir -p $sample_delta$dirpath; then
+				echo "FAIL: mkdir failed !" >&2
+				cleanup
+				exit 1
 			fi
-
+			if ! cp -r $new_pkg_unzip_path/$dirpath/$filepath $sample_delta/$dirpath/$filepath; then
+				echo "FAIL: cp failed !" >&2
+				cleanup
+				exit 1
+			fi
 			dirpath=${dirpath:1:${#dirpath}}
 			if [ ${#dirpath} -gt 1 ];then
 				dirpath="$dirpath/"
 			fi
-			if [[ "$line" =~ "tizen-manifest.xml"  || "$line" =~ "signature1.xml" || "$line" =~ "author-signature.xml" ]] ; then
-				`echo "<file name=\"$dirpath$filepath\" />" >> $sample_delta/added.xml`
-			else
-				`echo "<file name=\"$dirpath$filepath\" />" >> $sample_delta/modified.xml`
+			`echo "<file name=\"$dirpath$filepath\" />" >> $sample_delta/added.xml`
+		fi
+	elif [[ "$action" =~ "differ" ]]; then
+		parent_path=${file1##*$old_pkg_unzip_path}
+		filepath=`basename $parent_path`
+		dirpath=`dirname $parent_path`
+		#echo "dirpath "$dirpath
+		#echo "filepath "$filepath
+		if [[ "$file1" =~ "tizen-manifest.xml" || "$file1" =~ "signature1.xml" || "$file1" =~ "author-signature.xml" || "$file1" =~ "config.xml" ]] ; then
+			if ! mkdir -p $sample_delta$dirpath; then
+				echo "FAIL: mkdir failed !" >&2
+				cleanup
+				exit 1
 			fi
+			if ! cp -r $new_pkg_unzip_path/$dirpath/$filepath $sample_delta/$dirpath/$filepath; then
+				echo "FAIL: cp failed !" >&2
+				cleanup
+				exit 1
+			fi
+		else
+			if ! mkdir -p $sample_delta$dirpath; then
+				echo "FAIL: mkdir failed!" >&2
+				cleanup
+				exit 1
+			fi
+			if ! xdelta3 -e -s $file1 $file2 $sample_delta$dirpath/$filepath; then
+				echo "FAIL: xdelta3 failed!" >&2
+				cleanup
+				exit 1
+			fi
+		fi
 
-	elif [[ "$line" =~ "$old_tpk_unzip_path" ]]; then
-		parent_path=${line##*$old_tpk_unzip_path}
+		dirpath=${dirpath:1:${#dirpath}}
+		if [ ${#dirpath} -gt 1 ];then
+			dirpath="$dirpath/"
+		fi
+		if [[ "$file1" =~ "tizen-manifest.xml" || "$file1" =~ "signature1.xml" || "$file1" =~ "author-signature.xml" || "$file1" =~ "config.xml" ]] ; then
+			`echo "<file name=\"$dirpath$filepath\" />" >> $sample_delta/added.xml`
+		else
+			`echo "<file name=\"$dirpath$filepath\" />" >> $sample_delta/modified.xml`
+		fi
+
+	elif [[ "$action" == "only" && "$file1" =~ "$old_pkg_unzip_path" ]]; then
+		parent_path=${line##*$old_pkg_unzip_path}
 		#echo "removed " $parent_path
 		string_to_replace_with="/"
 		result_string="${parent_path/: /$string_to_replace_with}"
@@ -207,8 +232,8 @@ while read line
 			dirpath="$dirpath/"
 		fi
 		`echo "<file name=\"$dirpath$filepath\" />" >> $sample_delta/removed.xml`
-	elif [[ "$line" =~ "$new_tpk_unzip_path" ]]; then
-		parent_path=${line##*$new_tpk_unzip_path}
+	elif [[ "$action" == "only" && "$file1" =~ "$new_pkg_unzip_path" ]]; then
+		parent_path=${line##*$new_pkg_unzip_path}
 		#echo "added " $parent_path
 		string_to_replace_with="/"
 		result_string="${parent_path/: /$string_to_replace_with}"
@@ -222,7 +247,7 @@ while read line
 			cleanup
 			exit 1
 		fi
-		if ! cp -r $new_tpk_unzip_path/$dirpath/$filepath $sample_delta/$dirpath/$filepath; then
+		if ! cp -r $new_pkg_unzip_path/$dirpath/$filepath $sample_delta/$dirpath/$filepath; then
 			echo "FAIL: cp failed!" >&2
 			cleanup
 			exit 1
@@ -254,9 +279,9 @@ fi
 `rm $sample_delta/modified.xml $sample_delta/removed.xml $sample_delta/added.xml `
 `chmod -R +x $sample_delta`
 cd $sample_delta
-dirpath=`dirname $delta_tpk`
+dirpath=`dirname $delta_pkg`
 #echo $dirpath
-filepath=`basename $delta_tpk`
+filepath=`basename $delta_pkg`
 #echo $filepath
 `echo zip -r $filepath.zip *`
 if ! mv $filepath.zip $dirpath/$filepath.delta; then
