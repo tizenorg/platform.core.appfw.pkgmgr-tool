@@ -84,7 +84,7 @@ static int __clear_dir(const char *dirname)
 				if (ret != 0)
 					LOGE("Couldn't remove the directory. "
 							"errno : %d (%s)\n",
-							errno, strerror(errno));
+							errno, strerror_r(errno, buf, sizeof(buf)));
 
 				ret = remove(abs_filename);
 				if (ret != 0) {
@@ -99,7 +99,7 @@ static int __clear_dir(const char *dirname)
 			if (ret != 0) {
 				LOGE("Couldn't remove the directory. errno : "
 						"%d (%s)\n", errno,
-						strerror(errno));
+						strerror_r(errno, buf, sizeof(buf)));
 				goto err;
 			}
 		}
