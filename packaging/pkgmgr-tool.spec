@@ -56,15 +56,15 @@ update-mime-database %{_datadir}/mime
 chsmack -a '*' %{TZ_SYS_RW_PACKAGES}
 
 %posttrans
-pkg_initdb
-install_preload_tpk
-if [ -f /tmp/.preload_install_error ]
-then
-  if [ ! -d /tmp/.postscript/error ]
-  then
-    mkdir -p /tmp/.postscript/error
+if [ $1 == 1 ]; then
+  pkg_initdb
+  install_preload_tpk
+  if [ -f /tmp/.preload_install_error ]; then
+    if [ ! -d /tmp/.postscript/error ]; then
+      mkdir -p /tmp/.postscript/error
+    fi
+    echo "preload install failed" > /tmp/.postscript/error/%{name}_error
   fi
-  echo "preload install failed" > /tmp/.postscript/error/%{name}_error
 fi
 
 %files
