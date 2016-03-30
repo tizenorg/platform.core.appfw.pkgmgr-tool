@@ -26,6 +26,7 @@ BuildRequires:  pkgconfig(pkgmgr)
 BuildRequires:  pkgmgr-info-parser-devel
 BuildRequires:  pkgmgr-info-parser
 BuildRequires:  fdupes
+Requires:       pkg-initdb
 
 %description
 Packager Manager Tool for packaging
@@ -56,8 +57,7 @@ update-mime-database %{_datadir}/mime
 chsmack -a '*' %{TZ_SYS_RW_PACKAGES}
 
 %posttrans
-pkg_initdb
-install_preload_tpk
+pkg-initdb
 if [ -f /tmp/.preload_install_error ]
 then
   if [ ! -d /tmp/.postscript/error ]
@@ -73,12 +73,10 @@ fi
 %dir %{_sysconfdir}/opt/upgrade
 %{_sysconfdir}/opt/upgrade/pkgmgr.patch.sh
 %{_bindir}/pkgcmd
-%attr(06755,root,root) %{_bindir}/pkg_initdb
 %attr(755,root,root) %{_sysconfdir}/gumd/useradd.d/10_package-manager-add.post
 %{_bindir}/pkg_getsize
 %{_bindir}/pkg_clearcache
 %{_bindir}/pkginfo
-%attr(0755,root,root) %{_bindir}/install_preload_tpk
 %{_datadir}/mime/packages/mime.wac.xml
 %{_datadir}/mime/packages/mime.tpk.xml
 %attr(0700,root,root) /etc/package-manager/pkgmgr-unzip-tpk.sh
