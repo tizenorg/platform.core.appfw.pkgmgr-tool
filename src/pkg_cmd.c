@@ -786,7 +786,7 @@ static int __process_request(uid_t uid)
 			printf("package is not installed\n");
 			break;
 		}
-		ret = pkgmgr_client_usr_request_service(PM_REQUEST_MOVE, data.type, pc, NULL, data.pkgid, uid, NULL, NULL, NULL);
+		ret = pkgmgr_client_usr_request_service(PM_REQUEST_MOVE, data.type, pc, data.pkg_type, data.pkgid, uid, NULL, NULL, NULL);
 
 		printf("pkg[%s] move result = %d\n", data.pkgid, ret);
 
