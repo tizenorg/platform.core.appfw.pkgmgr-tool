@@ -1,1 +1,1 @@
-pkg_initdb $2
+pkg_initdb --uid $2
