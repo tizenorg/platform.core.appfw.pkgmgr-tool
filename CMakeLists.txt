@@ -58,10 +58,6 @@ ADD_EXECUTABLE(pkg_clearcache src/pkg_clearcache.c)
 TARGET_LINK_LIBRARIES(pkg_clearcache ${pkgs_test_LDFLAGS})
 INSTALL(TARGETS pkg_clearcache DESTINATION bin)
 
-ADD_EXECUTABLE(pkg_initdb src/pkg_initdb.c)
-TARGET_LINK_LIBRARIES(pkg_initdb ${pkgs_initdb_LDFLAGS})
-INSTALL(TARGETS pkg_initdb DESTINATION bin)
-
 ADD_EXECUTABLE(install_preload_tpk src/install_preload_tpk.c)
 TARGET_LINK_LIBRARIES(install_preload_tpk ${pkgs_test_LDFLAGS})
 INSTALL(TARGETS install_preload_tpk DESTINATION bin)
