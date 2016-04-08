@@ -176,7 +176,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 
 	subfd = openat(fd, "data", O_RDONLY | O_DIRECTORY);
 	if (subfd >= 0) {
-		size = __calculate_directory_size(subfd, true);
+		size = __calculate_directory_size(subfd, false);
 		if (size < 0) {
 			ERR("Calculating shared/data directory failed.");
 			goto error;
@@ -194,7 +194,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 
 	subfd = openat(fd, "trusted", O_RDONLY | O_DIRECTORY);
 	if (subfd >= 0) {
-		size = __calculate_directory_size(subfd, true);
+		size = __calculate_directory_size(subfd, false);
 		if (size < 0) {
 			ERR("Calculating shared/trusted directory failed.");
 			goto error;
@@ -230,7 +230,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 
 	subfd = openat(fd, "cache", O_RDONLY | O_DIRECTORY);
 	if (subfd >= 0) {
-		size = __calculate_directory_size(subfd, true);
+		size = __calculate_directory_size(subfd, false);
 		if (size < 0) {
 			ERR("Calculating shared/cache directory failed.");
 			goto error;
@@ -333,7 +333,7 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 		}
 		if (strncmp(name, "data", strlen("data")) == 0) {
 			DBG("traverse path: %s/%s", app_root_dir, name);
-			size = __calculate_directory_size(subfd, true);
+			size = __calculate_directory_size(subfd, false);
 			if (size < 0) {
 				ERR("Calculating data directory failed.");
 				goto error;
@@ -342,7 +342,7 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 			DBG("data_size: %lld", *data_size);
 		} else if (strncmp(name, "cache", strlen("cache")) == 0) {
 			DBG("traverse path: %s/%s", app_root_dir, name);
-			size = __calculate_directory_size(subfd, true);
+			size = __calculate_directory_size(subfd, false);
 			if (size < 0) {
 				ERR("Calculating cache directory failed.");
 				goto error;
