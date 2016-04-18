@@ -67,11 +67,12 @@ static int __convert_to_absolute_path(char *path);
 
 /* Supported options */
 /* Note: 'G' is reserved */
-const char *short_options = "iurmcgCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:qhG";
+const char *short_options = "iurwmcgCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:qhG";
 const struct option long_options[] = {
 	{"install", 0, NULL, 'i'},
 	{"uninstall", 0, NULL, 'u'},
 	{"reinstall", 0, NULL, 'r'},
+	{"mount-install", 0, NULL, 'w'},
 	{"move", 0, NULL, 'm'},
 	{"clear", 0, NULL, 'c'},
 	{"getsize", 0, NULL, 'g'},
@@ -109,6 +110,7 @@ enum pm_tool_request_e {
 	INSTALL_REQ = 1,
 	UNINSTALL_REQ,
 	REINSTALL_REQ,
+	MOUNT_INSTALL_REQ,
 	CSC_REQ,
 	GETSIZE_REQ,
 	CLEAR_REQ,
@@ -384,6 +386,7 @@ static void __print_usage()
 	printf("-i, --install		install the package\n");
 	printf("-u, --uninstall		uninstall the package\n");
 	printf("-r, --reinstall		reinstall the package\n");
+	printf("-w, --mount-install	mount install the package\n");
 	printf("-c, --clear		clear user data\n");
 	printf("-m, --move		move package\n");
 	printf("-g, --getsize		get size of given package\n");
@@ -411,6 +414,7 @@ static void __print_usage()
 	printf("pkgcmd -i -t <pkg type> (-d <descriptor path>) -p <pkg path> (--global)\n");
 	printf("pkgcmd -u -n <pkgid> (--global)\n");
 	printf("pkgcmd -r -t <pkg type> -n <pkgid> (--global) \n");
+	printf("pkgcmd -w -t <pkg type> (-d <descriptor path>) -p <pkg path> (--global)\n");
 	printf("pkgcmd -l (-t <pkg type>) \n");
 	printf("pkgcmd -s -t <pkg type> -p <pkg path>\n");
 	printf("pkgcmd -s -t <pkg type> -n <pkg name>\n");
@@ -424,6 +428,7 @@ static void __print_usage()
 	printf("pkgcmd -u -n org.example.hello\n");
 	printf("pkgcmd -i -t tpk -p /tmp/org.example.hello-1.0.0-arm.tpk\n");
 	printf("pkgcmd -r -t tpk -n org.example.hello\n");
+	printf("pkgcmd -w -t tpk -p /tmp/org.example.hello-1.0.0-arm.tpk\n");
 	printf("pkgcmd -c -t tpk -n org.example.hello\n");
 	printf("pkgcmd -m -t tpk -T 1 -n org.example.hello\n");
 	printf("pkgcmd -C -n org.example.hello\n");
@@ -659,7 +664,42 @@ static int __process_request(uid_t uid)
 		g_main_loop_run(main_loop);
 		ret = data.result;
 		break;
+	case MOUNT_INSTALL_REQ:
+		if (data.pkg_type[0] == '\0' || data.pkg_path[0] == '\0') {
+			printf("Please provide the arguments.\n");
+			printf("use -h option to see usage\n");
+			data.result = PKGCMD_ERRCODE_INVALID_VALUE;
+			break;
+		}
+		main_loop = g_main_loop_new(NULL, FALSE);
+		pc = pkgmgr_client_new(PC_REQUEST);
+		if (pc == NULL) {
+			printf("PkgMgr Client Creation Failed\n");
+			data.result = PKGCMD_ERRCODE_ERROR;
+			break;
+		}
 
+		if (data.tep_path[0] != '\0')
+			pkgmgr_client_set_tep_path(pc, data.tep_path, data.tep_move);
+
+		if (data.des_path[0] == '\0')
+			ret = pkgmgr_client_usr_mount_install(pc, data.pkg_type, NULL,
+					data.pkg_path, NULL, PM_QUIET,
+					__return_cb, pc, uid);
+		else
+			ret = pkgmgr_client_usr_mount_install(pc, data.pkg_type,
+					data.des_path, data.pkg_path,
+					NULL, PM_QUIET, __return_cb, pc, uid);
+
+		if (ret < 0) {
+			data.result = PKGCMD_ERRCODE_ERROR;
+			if (access(data.pkg_path, F_OK) != 0)
+				data.result = PKGCMD_ERRCODE_PACKAGE_NOT_FOUND;
+			break;
+		}
+		g_main_loop_run(main_loop);
+		ret = data.result;
+		break;
 	case CLEAR_REQ:
 		if (data.pkg_type[0] == '\0' || data.pkgid[0] == '\0') {
 			printf("Please provide the arguments.\n");
@@ -1098,6 +1138,10 @@ int main(int argc, char *argv[])
 
 		case 'r':  /* reinstall */
 			data.request = REINSTALL_REQ;
+			break;
+
+		case 'w':  /* mount install */
+			data.request = MOUNT_INSTALL_REQ;
 			break;
 
 		case 'c':  /* clear */
