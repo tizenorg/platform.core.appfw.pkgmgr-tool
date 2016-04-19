@@ -24,12 +24,12 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/client/include)
 
 INCLUDE(FindPkgConfig)
 
-pkg_check_modules(pkgs_initdb REQUIRED libsmack libxml-2.0 bundle pkgmgr-parser pkgmgr-info libtzplatform-config pkgmgr)
+pkg_check_modules(pkgs_initdb REQUIRED bundle pkgmgr-parser pkgmgr-info libtzplatform-config pkgmgr)
 FOREACH(flag ${pkgs_initdb_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
 ENDFOREACH(flag)
 
-pkg_check_modules(pkgs_test REQUIRED dlog glib-2.0 libxml-2.0 bundle pkgmgr-parser pkgmgr-info libtzplatform-config)
+pkg_check_modules(pkgs_test REQUIRED dlog glib-2.0 bundle pkgmgr pkgmgr-parser pkgmgr-info pkgmgr-installer libtzplatform-config)
 FOREACH(flag ${pkgs_test_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
 ENDFOREACH(flag)
@@ -43,15 +43,15 @@ SET(CMAKE_C_FLAGS_DEBUG "-O0 -g -fPIE")
 SET(CMAKE_C_FLAGS_RELEASE "-O2 -fPIE")
 
 ADD_EXECUTABLE(pkgcmd src/pkg_cmd.c src/delta.c)
-TARGET_LINK_LIBRARIES(pkgcmd pkgmgr-client ${pkgs_test_LDFLAGS})
+TARGET_LINK_LIBRARIES(pkgcmd ${pkgs_test_LDFLAGS})
 INSTALL(TARGETS pkgcmd DESTINATION bin)
 
 ADD_EXECUTABLE(pkginfo src/pkg_info.c)
-TARGET_LINK_LIBRARIES(pkginfo pkgmgr-client pkgmgr_installer ${pkgs_test_LDFLAGS})
+TARGET_LINK_LIBRARIES(pkginfo ${pkgs_test_LDFLAGS})
 INSTALL(TARGETS pkginfo DESTINATION bin)
 
 ADD_EXECUTABLE(pkg_getsize src/pkg_getsize.c)
-TARGET_LINK_LIBRARIES(pkg_getsize pkgmgr-client pkgmgr_installer ${pkgs_test_LDFLAGS})
+TARGET_LINK_LIBRARIES(pkg_getsize ${pkgs_test_LDFLAGS})
 INSTALL(TARGETS pkg_getsize DESTINATION bin)
 
 ADD_EXECUTABLE(pkg_clearcache src/pkg_clearcache.c)

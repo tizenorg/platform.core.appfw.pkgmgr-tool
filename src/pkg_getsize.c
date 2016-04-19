@@ -35,10 +35,9 @@
 /* For multi-user support */
 #include <tzplatform_config.h>
 
+#include <dlog.h>
 #include <package-manager.h>
-#include <package-manager-debug.h>
 #include <pkgmgr_installer.h>
-#include <pkgmgr/comm_config.h>
 
 #undef LOG_TAG
 #ifndef LOG_TAG
@@ -89,7 +88,7 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 	if (include_itself) {
 		ret = fstat(dfd, &st);
 		if (ret < 0) {
-			ERR("fstat() failed, file_info: ., errno: %d (%s)", errno,
+			LOGE("fstat() failed, file_info: ., errno: %d (%s)", errno,
 					strerror_r(errno, buf, sizeof(buf)));
 			return -1;
 		}
@@ -98,7 +97,7 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 
 	dir = fdopendir(dfd);
 	if (dir == NULL) {
-		ERR("fdopendir() failed, errno: %d (%s)", errno,
+		LOGE("fdopendir() failed, errno: %d (%s)", errno,
 				strerror_r(errno, buf, sizeof(buf)));
 		return -1;
 	}
@@ -117,18 +116,18 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 		if (dent.d_type == DT_DIR) {
 			subfd = openat(dfd, file_info, O_RDONLY | O_DIRECTORY);
 			if (subfd < 0) {
-				ERR("openat() failed, file_info:%s, errno: %d(%s)",
+				LOGE("openat() failed, file_info:%s, errno: %d(%s)",
 						file_info, errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
 
-			DBG("traverse file_info: %s", file_info);
+			LOGD("traverse file_info: %s", file_info);
 			size += __calculate_directory_size(subfd, true);
 			close(subfd);
 		} else {
 			ret = fstatat(dfd, file_info, &st, AT_SYMLINK_NOFOLLOW);
 			if (ret < 0) {
-				ERR("fstatat() failed, file_info:%s, errno: %d(%s)",
+				LOGE("fstatat() failed, file_info:%s, errno: %d(%s)",
 						file_info, errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
@@ -154,92 +153,92 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 	int ret;
 	char buf[1024] = {0, };
 
-	DBG("traverse path: %s/shared", app_root_dir);
+	LOGD("traverse path: %s/shared", app_root_dir);
 
 	fd = openat(dfd, "shared", O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
-		ERR("openat() failed, path: %s/shared, errno: %d (%s)",
+		LOGE("openat() failed, path: %s/shared, errno: %d (%s)",
 				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
 		return -1;
 	}
 
 	ret = fstat(fd, &st);
 	if (ret < 0) {
-		ERR("fstat() failed, path: %s/shared, errno: %d (%s)",
+		LOGE("fstat() failed, path: %s/shared, errno: %d (%s)",
 				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 	*app_size += __stat_size(&st);  /* shared directory */
-	DBG("app_size: %lld", *app_size);
+	LOGD("app_size: %lld", *app_size);
 
-	DBG("traverse path: %s/shared/data", app_root_dir);
+	LOGD("traverse path: %s/shared/data", app_root_dir);
 
 	subfd = openat(fd, "data", O_RDONLY | O_DIRECTORY);
 	if (subfd >= 0) {
 		size = __calculate_directory_size(subfd, false);
 		if (size < 0) {
-			ERR("Calculating shared/data directory failed.");
+			LOGE("Calculating shared/data directory failed.");
 			goto error;
 		}
 		*data_size += size;
-		DBG("data_size: %lld", *data_size);
+		LOGD("data_size: %lld", *data_size);
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
-		ERR("openat() failed, file_info: data, errno: %d (%s)",
+		LOGE("openat() failed, file_info: data, errno: %d (%s)",
 				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
-	DBG("traverse path: %s/shared/trusted", app_root_dir);
+	LOGD("traverse path: %s/shared/trusted", app_root_dir);
 
 	subfd = openat(fd, "trusted", O_RDONLY | O_DIRECTORY);
 	if (subfd >= 0) {
 		size = __calculate_directory_size(subfd, false);
 		if (size < 0) {
-			ERR("Calculating shared/trusted directory failed.");
+			LOGE("Calculating shared/trusted directory failed.");
 			goto error;
 		}
 		*data_size += size;
-		DBG("data_size: %lld", *data_size);
+		LOGD("data_size: %lld", *data_size);
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
-		DBG("openat() failed, file_info: trusted, errno: %d (%s)",
+		LOGD("openat() failed, file_info: trusted, errno: %d (%s)",
 				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
-	DBG("traverse path: %s/shared/res", app_root_dir);
+	LOGD("traverse path: %s/shared/res", app_root_dir);
 
 	subfd = openat(fd, "res", O_RDONLY | O_DIRECTORY);
 	if (subfd >= 0) {
 		size = __calculate_directory_size(subfd, true);
 		if (size < 0) {
-			ERR("Calculating shared/res directory failed.");
+			LOGE("Calculating shared/res directory failed.");
 			goto error;
 		}
 		*app_size += size;
-		DBG("app_size: %lld", *app_size);
+		LOGD("app_size: %lld", *app_size);
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
-		ERR("openat() failed, file_info: res, errno: %d (%s)",
+		LOGE("openat() failed, file_info: res, errno: %d (%s)",
 				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
-	DBG("traverse path: %s/shared/cache", app_root_dir);
+	LOGD("traverse path: %s/shared/cache", app_root_dir);
 
 	subfd = openat(fd, "cache", O_RDONLY | O_DIRECTORY);
 	if (subfd >= 0) {
 		size = __calculate_directory_size(subfd, false);
 		if (size < 0) {
-			ERR("Calculating shared/cache directory failed.");
+			LOGE("Calculating shared/cache directory failed.");
 			goto error;
 		}
 		*data_size += size;
-		DBG("data_size: %lld", *data_size);
+		LOGD("data_size: %lld", *data_size);
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
-		ERR("openat() failed, file_info: data, errno: %d (%s)",
+		LOGE("openat() failed, file_info: data, errno: %d (%s)",
 				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
@@ -289,13 +288,13 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 				APP_BASE_EXTERNAL_PATH, pkgid);
 #endif
 	} else {
-		ERR("Invalid STORAGE_TYPE");
+		LOGE("Invalid STORAGE_TYPE");
 		return -1;
 	}
 
 	dir = opendir(app_root_dir);
 	if (dir == NULL) {
-		ERR("opendir() failed, path: %s, errno: %d (%s)",
+		LOGE("opendir() failed, path: %s, errno: %d (%s)",
 				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
 		return -1;
 	}
@@ -303,7 +302,7 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 	dfd = dirfd(dir);
 	ret = fstat(dfd, &st);
 	if (ret < 0) {
-		ERR("fstat() failed, path: %s, errno: %d (%s)", app_root_dir,
+		LOGE("fstat() failed, path: %s, errno: %d (%s)", app_root_dir,
 				errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
@@ -325,48 +324,48 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 		subfd = openat(dfd, name, O_RDONLY | O_DIRECTORY);
 		if (subfd < 0) {
 			if (errno != ENOENT) {
-				ERR("openat() failed, errno: %d (%s)",
+				LOGE("openat() failed, errno: %d (%s)",
 						errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
 			continue;
 		}
 		if (strncmp(name, "data", strlen("data")) == 0) {
-			DBG("traverse path: %s/%s", app_root_dir, name);
+			LOGD("traverse path: %s/%s", app_root_dir, name);
 			size = __calculate_directory_size(subfd, false);
 			if (size < 0) {
-				ERR("Calculating data directory failed.");
+				LOGE("Calculating data directory failed.");
 				goto error;
 			}
 			*data_size += size;
-			DBG("data_size: %lld", *data_size);
+			LOGD("data_size: %lld", *data_size);
 		} else if (strncmp(name, "cache", strlen("cache")) == 0) {
-			DBG("traverse path: %s/%s", app_root_dir, name);
+			LOGD("traverse path: %s/%s", app_root_dir, name);
 			size = __calculate_directory_size(subfd, false);
 			if (size < 0) {
-				ERR("Calculating cache directory failed.");
+				LOGE("Calculating cache directory failed.");
 				goto error;
 			}
 			*cache_size += size;
-			DBG("cache_size: %lld", *cache_size);
+			LOGD("cache_size: %lld", *cache_size);
 		} else if (strncmp(name, "shared", strlen("shared")) == 0) {
 			size = __calculate_shared_dir_size(dfd, app_root_dir,
 					data_size, app_size);
 			if (size < 0) {
-				ERR("Calculating shared directory failed.");
+				LOGE("Calculating shared directory failed.");
 				goto error;
 			}
 			*app_size += size;
-			DBG("app_size: %lld", *app_size);
+			LOGD("app_size: %lld", *app_size);
 		} else {
-			DBG("traverse path: %s/%s", app_root_dir, name);
+			LOGD("traverse path: %s/%s", app_root_dir, name);
 			size = __calculate_directory_size(subfd, true);
 			if (size < 0) {
-				ERR("Calculating %s directory failed.", name);
+				LOGE("Calculating %s directory failed.", name);
 				goto error;
 			}
 			*app_size += size;
-			DBG("app_size: %lld", *app_size);
+			LOGD("app_size: %lld", *app_size);
 		}
 		close(subfd);
 	}
@@ -388,7 +387,7 @@ static char *__get_pkg_size_info_str(const pkg_size_info_t* pkg_size_info)
 
 	size_info_str = (char *)malloc(MAX_SIZE_INFO_SIZE);
 	if (size_info_str == NULL) {
-		ERR("Out of memory.");
+		LOGE("Out of memory.");
 		return NULL;
 	}
 
@@ -411,7 +410,7 @@ static char *__get_pkg_size_info_str(const pkg_size_info_t* pkg_size_info)
 			"%lld", pkg_size_info->ext_app_size);
 	strncat(size_info_str, ":", MAX_SIZE_INFO_SIZE - strlen(size_info_str) - 1);
 
-	DBG("size_info_str: %s", size_info_str);
+	LOGD("size_info_str: %s", size_info_str);
 
 	return size_info_str;
 }
@@ -425,8 +424,8 @@ static int __get_pkg_size_info(const char *pkgid,
 			&pkg_size_info->data_size, &pkg_size_info->cache_size,
 			&pkg_size_info->app_size);
 	if (ret < 0)
-		DBG("Calculating internal package size info failed: %d", ret);
-	DBG("size_info: %lld %lld %lld", pkg_size_info->data_size,
+		LOGD("Calculating internal package size info failed: %d", ret);
+	LOGD("size_info: %lld %lld %lld", pkg_size_info->data_size,
 			pkg_size_info->cache_size, pkg_size_info->app_size);
 
 #if 0
@@ -435,8 +434,8 @@ static int __get_pkg_size_info(const char *pkgid,
 			&pkg_size_info->ext_cache_size,
 			&pkg_size_info->ext_app_size);
 	if (ret < 0)
-		DBG("Calculating external package size info failed: %d", ret);
-	DBG("size_info(external): %lld %lld %lld", pkg_size_info->ext_data_size,
+		LOGD("Calculating external package size info failed: %d", ret);
+	LOGD("size_info(external): %lld %lld %lld", pkg_size_info->ext_data_size,
 			pkg_size_info->ext_cache_size,
 			pkg_size_info->ext_app_size);
 #endif
@@ -453,7 +452,7 @@ static int __get_total_pkg_size_info_cb(const pkgmgrinfo_pkginfo_h handle,
 
 	ret = pkgmgrinfo_pkginfo_get_pkgid(handle, &pkgid);
 	if (ret != PMINFO_R_OK) {
-		ERR("pkgmgrinfo_pkginfo_get_pkgid() failed");
+		LOGE("pkgmgrinfo_pkginfo_get_pkgid() failed");
 		return -1;
 	}
 
@@ -481,11 +480,11 @@ int __make_size_info_file(char *req_key, long long size)
 
 	snprintf(info_file, sizeof(info_file), "%s/%s", PKG_SIZE_INFO_PATH,
 			req_key);
-	ERR("File path = %s", info_file);
+	LOGE("File path = %s", info_file);
 
 	file = fopen(info_file, "w");
 	if (file == NULL) {
-		ERR("Couldn't open the file %s", info_file);
+		LOGE("Couldn't open the file %s", info_file);
 		return -1;
 	}
 
@@ -515,7 +514,7 @@ static int __send_sizeinfo_cb(const pkgmgrinfo_pkginfo_h handle,
 
 	ret = pkgmgrinfo_pkginfo_get_pkgid(handle, &pkgid);
 	if (ret != PMINFO_R_OK) {
-		ERR("pkgmgrinfo_pkginfo_get_pkgid() failed");
+		LOGE("pkgmgrinfo_pkginfo_get_pkgid() failed");
 		return -1;
 	}
 
@@ -569,7 +568,7 @@ int main(int argc, char *argv[])
 	/* argv[4] = req_key */
 
 	if (argv[1] == NULL) {
-		ERR("pkgid is NULL");
+		LOGE("pkgid is NULL");
 		return -1;
 	}
 
@@ -577,11 +576,11 @@ int main(int argc, char *argv[])
 	get_type = atoi(argv[2]);
 	req_key = argv[4];
 
-	DBG("start get size : [pkgid=%s, request type=%d]", pkgid, get_type);
+	LOGD("start get size : [pkgid=%s, request type=%d]", pkgid, get_type);
 
 	pi = pkgmgr_installer_new();
 	if (pi == NULL) {
-		ERR("failed to create installer");
+		LOGE("failed to create installer");
 		return -1;
 	}
 	pkgmgr_installer_receive_request(pi, argc, argv);
@@ -634,16 +633,16 @@ int main(int argc, char *argv[])
 		break;
 	default:
 		ret = -1;
-		ERR("unsupported or depreated type");
+		LOGE("unsupported or depreated type");
 		break;
 	}
 
 	if (pkgmgr_installer_send_signal(pi, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
 				pkgid, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
 				PKGMGR_INSTALLER_END_KEY_STR))
-		ERR("failed to send finished signal");
+		LOGE("failed to send finished signal");
 
-	DBG("get size result = %d", ret);
+	LOGD("get size result = %d", ret);
 	pkgmgr_installer_free(pi);
 
 	return ret;

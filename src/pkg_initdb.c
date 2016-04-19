@@ -34,7 +34,6 @@
 #include <pkgmgr_parser_db.h>
 #include <pkgmgr-info.h>
 
-#include <sys/smack.h>
 /* For multi-user support */
 #include <tzplatform_config.h>
 
