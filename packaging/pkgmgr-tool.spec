@@ -74,7 +74,7 @@ fi
 %dir %{_sysconfdir}/opt/upgrade
 %{_sysconfdir}/opt/upgrade/pkgmgr.patch.sh
 %{_bindir}/pkgcmd
-%attr(06755,root,root) %{_bindir}/pkg_initdb
+%attr(0755,root,root) %{_bindir}/pkg_initdb
 %attr(755,root,root) %{_sysconfdir}/gumd/useradd.d/10_package-manager-add.post
 %{_bindir}/pkg_getsize
 %{_bindir}/pkg_clearcache
