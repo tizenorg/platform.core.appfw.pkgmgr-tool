@@ -8,6 +8,7 @@ Source0:    %{name}-%{version}.tar.gz
 Source1001: %{name}.manifest
 
 Requires:  unzip
+Requires:  smack
 
 BuildRequires:  cmake
 BuildRequires:  gettext-tools
@@ -26,7 +27,6 @@ BuildRequires:  pkgconfig(pkgmgr-installer)
 BuildRequires:  pkgmgr-info-parser-devel
 BuildRequires:  pkgmgr-info-parser
 BuildRequires:  fdupes
-Requires:  chsmack
 
 %description
 Packager Manager Tool for packaging
