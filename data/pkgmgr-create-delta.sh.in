@@ -147,6 +147,8 @@ while read line
 			 action="only"
 		elif [ $count -eq 2 ]; then
 			file1=$word;
+		elif [ $count -eq 3 ]; then
+			file=$word;
 		elif [ $count -eq 4 ]; then
 			file2=$word;
 		elif [ $count -eq 5 ]; then
@@ -216,7 +218,7 @@ while read line
 			`echo "<file name=\"$dirpath$filepath\" />" >> $sample_delta/modified.xml`
 		fi
 
-	elif [[ "$action" == "only" && "$file1" =~ "$old_pkg_unzip_path" ]]; then
+	elif [[ "$action" == "only" && "$file" =~ "$old_pkg_unzip_path" ]]; then
 		parent_path=${line##*$old_pkg_unzip_path}
 		#echo "removed " $parent_path
 		string_to_replace_with="/"
@@ -232,7 +234,7 @@ while read line
 			dirpath="$dirpath/"
 		fi
 		`echo "<file name=\"$dirpath$filepath\" />" >> $sample_delta/removed.xml`
-	elif [[ "$action" == "only" && "$file1" =~ "$new_pkg_unzip_path" ]]; then
+	elif [[ "$action" == "only" && "$file" =~ "$new_pkg_unzip_path" ]]; then
 		parent_path=${line##*$new_pkg_unzip_path}
 		#echo "added " $parent_path
 		string_to_replace_with="/"
