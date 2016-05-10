@@ -57,7 +57,10 @@ update-mime-database %{_datadir}/mime
 chsmack -a '*' %{TZ_SYS_RW_PACKAGES}
 
 %posttrans
-pkg_initdb
+if [ ! -f %{TZ_SYS_DB}/.pkgmgr_parser.db ]
+then
+  pkg_initdb
+fi
 install_preload_tpk
 if [ -f /tmp/.preload_install_error ]
 then

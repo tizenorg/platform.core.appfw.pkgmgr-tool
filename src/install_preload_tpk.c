@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include <tzplatform_config.h>
 
@@ -36,27 +37,35 @@
 #ifdef _E
 #undef _E
 #endif
-#define _E(fmt, arg...) fprintf(stderr, "[TPK_PRELOAD_INSTALL][E][%s,%d] "fmt"\n", __FUNCTION__, __LINE__, ##arg);
+#define _E(fmt, arg...) fprintf(stderr, "[TPK_PRELOAD_INSTALL][E][%s,%d] \
+	 "fmt"\n", __FUNCTION__, __LINE__, ##arg);
 
 #ifdef _D
 #undef _D
 #endif
-#define _D(fmt, arg...) fprintf(stderr, "[TPK_PRELOAD_INSTALL][D][%s,%d] "fmt"\n", __FUNCTION__, __LINE__, ##arg);
+#define _D(fmt, arg...) fprintf(stderr, "[TPK_PRELOAD_INSTALL][D][%s,%d] \
+	"fmt"\n", __FUNCTION__, __LINE__, ##arg);
 
 #define BACKEND_CMD "/usr/bin/tpk-backend"
 
-static int _install_preload_tpk(uid_t uid, const char *directory)
+static int _install_preload_tpk(const char *directory)
 {
 	DIR *dir;
 	struct dirent file_info, *result;
 	int ret;
-	char buf[BUFSZE];
+	char file_path[BUFSZE];
+	char err_buf[BUFSZE];
 
 	dir = opendir(directory);
 	if (!dir) {
-		_E("Failed to access the [%s] because %s", directory,
-				strerror_r(errno, buf, sizeof(buf)));
-		return -1;
+		if (errno == ENOENT) {
+			_D("The directory for preloaded tpks doesn't exist");
+			return 0;
+		} else {
+			_E("Failed to access the [%s] because [%s]", directory,
+				strerror_r(errno, err_buf, sizeof(err_buf)));
+			return -1;
+		}
 	}
 
 	_D("Loading tpk files from %s", directory);
@@ -67,26 +76,33 @@ static int _install_preload_tpk(uid_t uid, const char *directory)
 		if (file_info.d_name[0] == '.')
 			continue;
 
-		snprintf(buf, sizeof(buf), "%s/%s", directory, file_info.d_name);
-		_D("tpk file %s", buf);
+		snprintf(file_path, sizeof(file_path), "%s/%s", directory,
+			file_info.d_name);
+		_D("tpk file %s", file_path);
 
 		pid_t pid = fork();
 		if (pid == 0) {
-			if (setuid(uid) != 0) {
-				_E("failed to set uid");
-				closedir(dir);
-				return -1;
-			}
-			execl(BACKEND_CMD, BACKEND_CMD, "-i", buf, "--preload",
-			      (char *)NULL);
+			execl(BACKEND_CMD, BACKEND_CMD, "-i", file_path,
+				"--preload", (char *)NULL);
 		} else if (pid < 0) {
 			_E("failed to fork and execute %s!", BACKEND_CMD);
 			closedir(dir);
 			return -1;
 		}
+
 		if (pid > 0) {
 			int status = 0;
 			waitpid(pid, &status, 0);
+		}
+
+		/* remove a file after installation */
+		ret = remove(file_path);
+		if (ret < 0) {
+			_E("Failed to remove the file [%s] because [%s]",
+				file_path, strerror_r(errno, err_buf,
+				sizeof(err_buf)));
+			closedir(dir);
+			return -1;
 		}
 	}
 
@@ -106,13 +122,31 @@ static int _is_authorized(uid_t uid)
 
 int main(int argc, char *argv[])
 {
+	char err_msg[BUFSZE];
 	const char *dir = tzplatform_mkpath(TZ_SYS_RO_APP, ".preload-tpk");
-	uid_t uid = getuid();
+	int handle = -1;
+	int ret = 0;
 
-	if (!_is_authorized(uid)) {
+	if (!_is_authorized(getuid())) {
 		_E("You are not an authorized user!");
 		return -1;
 	}
 
-	return _install_preload_tpk(uid, dir);
+	if (_install_preload_tpk(dir) < 0) {
+		handle = open("/tmp/.preload_install_error",
+			O_WRONLY | O_CREAT | O_APPEND | O_TRUNC, 0644);
+		if (handle == -1) {
+			_E("Failed to open error file");
+			return -1;
+		}
+		snprintf(err_msg, sizeof(err_msg),
+			"install_preload_tpk error!\n");
+		ret = write(handle, err_msg, strlen(err_msg));
+		if (ret == -1)
+			_E("Failed to write an error message. (%d)", errno);
+		close(handle);
+		return -1;
+	}
+
+	return 0;
 }
