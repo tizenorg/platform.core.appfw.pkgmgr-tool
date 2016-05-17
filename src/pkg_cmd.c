@@ -53,9 +53,6 @@
 #define GLOBAL_USER tzplatform_getuid(TZ_SYS_GLOBALAPP_USER)
 
 #define OPTVAL_GLOBAL 1000
-#define OPTVAL_ADD_BLACKLIST 1001
-#define OPTVAL_REMOVE_BLACKLIST 1002
-#define OPTVAL_CHECK_BLACKLIST 1003
 
 static int __process_request(uid_t uid);
 static void __print_usage();
@@ -99,9 +96,6 @@ const struct option long_options[] = {
 	{"global", 0, NULL, OPTVAL_GLOBAL},
 	{"quiet", 0, NULL, 'q'},
 	{"help", 0, NULL, 'h'},
-	{"add-blacklist", 1, NULL, OPTVAL_ADD_BLACKLIST},
-	{"remove-blacklist", 1, NULL, OPTVAL_REMOVE_BLACKLIST},
-	{"check-blacklist", 1, NULL, OPTVAL_CHECK_BLACKLIST},
 	{"debug-mode", 0, NULL, 'G'},
 	{0, 0, 0, 0}		/* sentinel */
 };
@@ -124,9 +118,6 @@ enum pm_tool_request_e {
 	SHOW_REQ,
 	HELP_REQ,
 	CREATE_DELTA,
-	ADD_BLACKLIST_REQ,
-	REMOVE_BLACKLIST_REQ,
-	CHECK_BLACKLIST_REQ,
 };
 typedef enum pm_tool_request_e req_type;
 
@@ -404,9 +395,6 @@ static void __print_usage()
 	printf("--global		Global Mode [Warning user should be privilegied to use this mode] \n");
 	printf("-e, --tep-path provide TEP package path\n");
 	printf("-M, --tep-move decide move/copy of TEP package[0:copy TEP package /1 : move TEP package, \n");
-	printf("--add-blacklist         add a package to blacklist\n");
-	printf("--remove-blacklist      remove a package from blacklist\n");
-	printf("--check-blacklist       check if the given package is blacklisted\n");
 	printf("-G, --debug-mode	install the package with debug mode for sdk\n");
 	printf("-h, --help	.	print this help\n\n");
 
@@ -516,7 +504,6 @@ static int __process_request(uid_t uid)
 	int pid = -1;
 	char pkg_old[PATH_MAX] = {0, };
 	char pkg_new[PATH_MAX] = {0, };
-	bool blacklist;
 
 #if !GLIB_CHECK_VERSION(2, 35, 0)
 	g_type_init();
@@ -993,83 +980,6 @@ static int __process_request(uid_t uid)
 		ret = 0;
 		break;
 
-	case ADD_BLACKLIST_REQ:
-		if (data.pkgid[0] == '\0') {
-			printf("Please provide the arguments.\n");
-			printf("use -h option to see usage\n");
-			ret = -1;
-			break;
-		}
-
-		pc = pkgmgr_client_new(PC_REQUEST);
-		if (pc == NULL) {
-			printf("PkgMgr Client Creation Failed\n");
-			data.result = PKGCMD_ERRCODE_ERROR;
-			break;
-		}
-
-		ret = pkgmgr_client_usr_add_blacklist(pc, data.pkgid, uid);
-		if (ret < 0) {
-			data.result = PKGCMD_ERRCODE_ERROR;
-			break;
-		}
-
-		printf("%d\n", ret);
-		ret = data.result;
-		break;
-	case REMOVE_BLACKLIST_REQ:
-		if (data.pkgid[0] == '\0') {
-			printf("Please provide the arguments.\n");
-			printf("use -h option to see usage\n");
-			ret = -1;
-			break;
-		}
-
-		pc = pkgmgr_client_new(PC_REQUEST);
-		if (pc == NULL) {
-			printf("PkgMgr Client Creation Failed\n");
-			data.result = PKGCMD_ERRCODE_ERROR;
-			break;
-		}
-
-		ret = pkgmgr_client_usr_remove_blacklist(pc, data.pkgid, uid);
-		if (ret < 0) {
-			data.result = PKGCMD_ERRCODE_ERROR;
-			break;
-		}
-
-		printf("%d\n", ret);
-		ret = data.result;
-		break;
-	case CHECK_BLACKLIST_REQ:
-		if (data.pkgid[0] == '\0') {
-			printf("Please provide the arguments.\n");
-			printf("use -h option to see usage\n");
-			ret = -1;
-			break;
-		}
-
-		pc = pkgmgr_client_new(PC_REQUEST);
-		if (pc == NULL) {
-			printf("PkgMgr Client Creation Failed\n");
-			data.result = PKGCMD_ERRCODE_ERROR;
-			break;
-		}
-
-		ret = pkgmgr_client_usr_check_blacklist(pc, data.pkgid, &blacklist, uid);
-		if (ret < 0) {
-			data.result = PKGCMD_ERRCODE_ERROR;
-			break;
-		}
-
-		if (blacklist)
-			printf("%s is blacklisted\n", data.pkgid);
-		else
-			printf("%s is not blacklisted\n", data.pkgid);
-
-		ret = data.result;
-		break;
-
 	default:
 		printf("Wrong Request\n");
 		ret = -1;
@@ -1295,27 +1205,6 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'G':  /* debug mode */
-			break;
-
-		case OPTVAL_ADD_BLACKLIST:
-			data.request = ADD_BLACKLIST_REQ;
-			if (optarg)
-				snprintf(data.pkgid, sizeof(data.pkgid),
-						"%s", optarg);
-			break;
-
-		case OPTVAL_REMOVE_BLACKLIST:
-			data.request = REMOVE_BLACKLIST_REQ;
-			if (optarg)
-				snprintf(data.pkgid, sizeof(data.pkgid),
-						"%s", optarg);
-			break;
-
-		case OPTVAL_CHECK_BLACKLIST:
-			data.request = CHECK_BLACKLIST_REQ;
-			if (optarg)
-				snprintf(data.pkgid, sizeof(data.pkgid),
-						"%s", optarg);
 			break;
 
 			/* Otherwise */
