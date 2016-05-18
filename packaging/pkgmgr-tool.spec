@@ -24,6 +24,7 @@ BuildRequires:  pkgconfig(xdgmime)
 BuildRequires:  pkgconfig(db-util)
 BuildRequires:  pkgconfig(pkgmgr)
 BuildRequires:  pkgconfig(pkgmgr-installer)
+BuildRequires:  pkgconfig(aul)
 BuildRequires:  pkgmgr-info-parser-devel
 BuildRequires:  pkgmgr-info-parser
 BuildRequires:  fdupes
@@ -82,6 +83,7 @@ fi
 %{_bindir}/pkg_getsize
 %{_bindir}/pkg_clearcache
 %{_bindir}/pkginfo
+%{_bindir}/rsc-slice
 %attr(0755,root,root) %{_bindir}/install_preload_tpk
 %{_datadir}/mime/packages/mime.wac.xml
 %{_datadir}/mime/packages/mime.tpk.xml
