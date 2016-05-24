@@ -25,7 +25,7 @@
 #define UNZIPFILE		"_FILES"
 #define MAX_MESSAGE_LEN	1024
 #define BUF_SIZE	1024
-char message[MAX_MESSAGE_LEN];
+extern char message[MAX_MESSAGE_LEN];
 
 void __create_diff_file(char *old_tpk_path, char *new_tpk_path);
 int __xsystem(const char *argv[]);

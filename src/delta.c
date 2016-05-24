@@ -33,6 +33,7 @@ static GList *__list_directory(const char *dir_name, const char *tpk_path, GList
 static int __compare_files(char *path1, char *path2);
 static void __print_to_file(char *msg);
 static void __free_g_list(GList *list);
+char message[MAX_MESSAGE_LEN];
 
 static void __free_g_list(GList *list)
 {
