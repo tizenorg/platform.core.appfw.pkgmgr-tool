@@ -64,7 +64,7 @@ static int __convert_to_absolute_path(char *path);
 
 /* Supported options */
 /* Note: 'G' is reserved */
-const char *short_options = "iurwmcgCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:qhG";
+const char *short_options = "iurwmcgxCkaADL:lsd:p:t:n:T:S:e:M:X:Y:Z:qhG";
 const struct option long_options[] = {
 	{"install", 0, NULL, 'i'},
 	{"uninstall", 0, NULL, 'u'},
@@ -97,6 +97,7 @@ const struct option long_options[] = {
 	{"quiet", 0, NULL, 'q'},
 	{"help", 0, NULL, 'h'},
 	{"debug-mode", 0, NULL, 'G'},
+	{"getsizeinfo", 0, NULL, 'x'},
 	{0, 0, 0, 0}		/* sentinel */
 };
 
@@ -118,6 +119,7 @@ enum pm_tool_request_e {
 	SHOW_REQ,
 	HELP_REQ,
 	CREATE_DELTA,
+	GET_PKG_SIZE_INFO_REQ
 };
 typedef enum pm_tool_request_e req_type;
 
@@ -494,6 +496,30 @@ static int __pkg_list_cb(const pkgmgrinfo_pkginfo_h handle, void *user_data)
 	printf("pkg[%s] size = %d\n", pkgid, ret);
 
 	return 0;
+}
+
+static void __pkg_size_info_recv_cb(pkgmgr_client *pc, const char *pkgid, const pkg_size_info_t *size_info, void *user_data)
+{
+	printf("Called sizeinfo callback for pkgid(%s)\n", pkgid);
+	printf("Internal > data size: %lld, cache size: %lld, app size: %lld\n",
+			size_info->data_size, size_info->cache_size, size_info->app_size);
+	printf("External > data size: %lld, cache size: %lld, app size: %lld\n",
+			size_info->ext_data_size, size_info->ext_cache_size, size_info->ext_app_size);
+
+	pkgmgr_client_free(pc);
+	g_main_loop_quit(main_loop);
+}
+
+static void __total_pkg_size_info_recv_cb(pkgmgr_client *pc, const pkg_size_info_t *size_info, void *user_data)
+{
+	printf("Called sizeinfo callback for total packages\n");
+	printf("Internal > data size: %lld, cache size: %lld, app size: %lld\n",
+			size_info->data_size, size_info->cache_size, size_info->app_size);
+	printf("External > data size: %lld, cache size: %lld, app size: %lld\n",
+			size_info->ext_data_size, size_info->ext_cache_size, size_info->ext_app_size);
+
+	pkgmgr_client_free(pc);
+	g_main_loop_quit(main_loop);
 }
 
 static int __process_request(uid_t uid)
@@ -975,6 +1001,39 @@ static int __process_request(uid_t uid)
 		ret = data.result;
 		break;
 
+	case GET_PKG_SIZE_INFO_REQ:
+		if (data.pkgid[0] == '\0') {
+			printf("Please provide the arguments.\n");
+			printf("use -h option to see usage\n");
+			ret = -1;
+			break;
+		}
+
+		main_loop = g_main_loop_new(NULL, FALSE);
+		pc = pkgmgr_client_new(PC_REQUEST);
+		if (pc == NULL) {
+			printf("PkgMgr Client Creation Failed\n");
+			data.result = PKGCMD_ERR_FATAL_ERROR;
+			break;
+		}
+
+		if (strcmp(data.pkgid, PKG_SIZE_INFO_TOTAL) == 0) {
+			ret = pkgmgr_client_get_total_package_size_info(pc, __total_pkg_size_info_recv_cb, NULL);
+
+		} else {
+			ret = pkgmgr_client_get_package_size_info(pc, data.pkgid, __pkg_size_info_recv_cb, NULL);
+		}
+		if (ret < 0) {
+			data.result = PKGCMD_ERR_FATAL_ERROR;
+			break;
+		}
+
+		printf("pkg[%s] ret: %d\n", data.pkgid, ret);
+		ret = data.result;
+
+		g_main_loop_run(main_loop);
+		break;
+
 	case HELP_REQ:
 		__print_usage();
 		ret = 0;
@@ -1061,6 +1120,10 @@ int main(int argc, char *argv[])
 
 		case 'g':  /* get pkg size */
 			data.request = GETSIZE_REQ;
+			break;
+
+		case 'x':  /* get pkg size info */
+			data.request = GET_PKG_SIZE_INFO_REQ;
 			break;
 
 		case 'm':  /* move */
