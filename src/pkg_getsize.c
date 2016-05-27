@@ -53,7 +53,7 @@
 #define OWNER_ROOT 0
 #define GLOBAL_USER tzplatform_getuid(TZ_SYS_GLOBALAPP_USER)
 
-#if 0 /* installed at external storage is not supported yet */
+#if 0 /* TODO: installed at external storage is not supported yet */
 #define APP_BASE_EXTERNAL_PATH ""
 #endif
 
@@ -282,7 +282,7 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 				tzplatform_mkpath(__is_global(uid)
 					? TZ_SYS_RW_APP : TZ_USER_APP, pkgid));
 		tzplatform_reset_user();
-#if 0 /* installed at external storage is not supported yet */
+#if 0 /* TODO: installed at external storage is not supported yet */
 	} else if (type == STORAGE_TYPE_EXTERNAL) {
 		snprintf(app_root_dir, MAX_PATH_LENGTH, "%s%s/",
 				APP_BASE_EXTERNAL_PATH, pkgid);
@@ -423,12 +423,14 @@ static int __get_pkg_size_info(const char *pkgid,
 	ret = __calculate_pkg_size_info(STORAGE_TYPE_INTERNAL, pkgid,
 			&pkg_size_info->data_size, &pkg_size_info->cache_size,
 			&pkg_size_info->app_size);
-	if (ret < 0)
-		LOGD("Calculating internal package size info failed: %d", ret);
-	LOGD("size_info: %lld %lld %lld", pkg_size_info->data_size,
+	if (ret < 0) {
+		LOGE("Calculating internal package size info failed: %d", ret);
+	} else {
+		LOGD("size_info: %lld %lld %lld", pkg_size_info->data_size,
 			pkg_size_info->cache_size, pkg_size_info->app_size);
+	}
 
-#if 0
+#if 0 /* TODO */
 	ret = __calculate_pkg_size_info(STORAGE_TYPE_EXTERNAL, pkgid,
 			&pkg_size_info->ext_data_size,
 			&pkg_size_info->ext_cache_size,
@@ -456,7 +458,11 @@ static int __get_total_pkg_size_info_cb(const pkgmgrinfo_pkginfo_h handle,
 		return -1;
 	}
 
-	__get_pkg_size_info(pkgid, &temp_pkg_size_info);
+	ret = __get_pkg_size_info(pkgid, &temp_pkg_size_info);
+	if (ret < 0) {
+		LOGE("failed to get size");
+		return -1;
+	}
 
 	pkg_size_info->app_size += temp_pkg_size_info.app_size;
 	pkg_size_info->data_size += temp_pkg_size_info.data_size;
@@ -480,7 +486,7 @@ int __make_size_info_file(char *req_key, long long size)
 
 	snprintf(info_file, sizeof(info_file), "%s/%s", PKG_SIZE_INFO_PATH,
 			req_key);
-	LOGE("File path = %s", info_file);
+	LOGD("File path = (%s), size = (%lld)", info_file, size);
 
 	file = fopen(info_file, "w");
 	if (file == NULL) {
@@ -518,7 +524,11 @@ static int __send_sizeinfo_cb(const pkgmgrinfo_pkginfo_h handle,
 		return -1;
 	}
 
-	__get_pkg_size_info(pkgid, &temp_pkg_size_info);
+	ret = __get_pkg_size_info(pkgid, &temp_pkg_size_info);
+	if (ret < 0) {
+		LOGE("failed to get size");
+		return -1;
+	}
 
 	total_size = temp_pkg_size_info.app_size +
 		temp_pkg_size_info.data_size + temp_pkg_size_info.cache_size;
@@ -617,19 +627,23 @@ int main(int argc, char *argv[])
 	case PM_GET_PKG_SIZE_INFO:
 		/* send result to signal */
 		ret = __get_pkg_size_info(pkgid, &info);
-		if (ret == 0)
+		if (ret == 0) {
 			ret = __send_result_to_signal(pi, req_key,
 					pkgid, &info);
-		ret = __make_size_info_file(req_key, 0);
+			size = info.app_size + info.data_size + info.cache_size;
+		}
+		ret = __make_size_info_file(req_key, size);
 		break;
 	case PM_GET_TOTAL_PKG_SIZE_INFO:
 		/* send result to signal */
 		ret = pkgmgrinfo_pkginfo_get_usr_list(
 				__get_total_pkg_size_info_cb, &info, getuid());
-		if (ret == 0)
+		if (ret == 0) {
 			ret = __send_result_to_signal(pi, req_key,
 					PKG_SIZE_INFO_TOTAL, &info);
-		ret = __make_size_info_file(req_key, 0);
+			size = info.app_size + info.data_size + info.cache_size;
+		}
+		ret = __make_size_info_file(req_key, size);
 		break;
 	default:
 		ret = -1;
