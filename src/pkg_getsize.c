@@ -53,13 +53,13 @@
 #define OWNER_ROOT 0
 #define GLOBAL_USER tzplatform_getuid(TZ_SYS_GLOBALAPP_USER)
 
-#if 0 /* TODO: installed at external storage is not supported yet */
-#define APP_BASE_EXTERNAL_PATH ""
-#endif
+#define APP_BASE_EXTERNAL_PATH tzplatform_mkpath(TZ_SYS_MEDIA, "SDCardA1/apps")
 
 typedef enum {
-	STORAGE_TYPE_INTERNAL,
-	STORAGE_TYPE_EXTERNAL,
+	STORAGE_TYPE_INTERNAL_GLOBAL_PATH,
+	STORAGE_TYPE_INTERNAL_USER_PATH,
+	STORAGE_TYPE_EXTERNAL_GLOBAL_PATH,
+	STORAGE_TYPE_EXTERNAL_USER_PATH,
 	STORAGE_TYPE_MAX = 255,
 } STORAGE_TYPE;
 
@@ -255,11 +255,6 @@ error:
 	return -1;
 }
 
-static int __is_global(uid_t uid)
-{
-	return (uid == OWNER_ROOT || uid == GLOBAL_USER) ? 1 : 0;
-}
-
 static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 		long long *data_size, long long *cache_size,
 		long long *app_size)
@@ -275,18 +270,23 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 	struct dirent ent, *result;
 	long long size = 0;
 
-	if (type == STORAGE_TYPE_INTERNAL) {
-		if (!__is_global(uid))
-			tzplatform_set_user(uid);
+	if (type == STORAGE_TYPE_INTERNAL_GLOBAL_PATH) {
 		snprintf(app_root_dir, sizeof(app_root_dir), "%s",
-				tzplatform_mkpath(__is_global(uid)
-					? TZ_SYS_RW_APP : TZ_USER_APP, pkgid));
+			tzplatform_mkpath(TZ_SYS_RW_APP, pkgid));
+	} else if (type == STORAGE_TYPE_INTERNAL_USER_PATH) {
+		tzplatform_set_user(uid);
+		snprintf(app_root_dir, sizeof(app_root_dir), "%s",
+			tzplatform_mkpath(TZ_USER_APP, pkgid));
 		tzplatform_reset_user();
-#if 0 /* TODO: installed at external storage is not supported yet */
-	} else if (type == STORAGE_TYPE_EXTERNAL) {
-		snprintf(app_root_dir, MAX_PATH_LENGTH, "%s%s/",
-				APP_BASE_EXTERNAL_PATH, pkgid);
-#endif
+	} else if (type == STORAGE_TYPE_EXTERNAL_GLOBAL_PATH) {
+		snprintf(app_root_dir, MAX_PATH_LENGTH, "%s/%s",
+			APP_BASE_EXTERNAL_PATH, pkgid);
+	} else if (type == STORAGE_TYPE_EXTERNAL_USER_PATH) {
+		tzplatform_set_user(uid);
+		snprintf(app_root_dir, MAX_PATH_LENGTH, "%s%s",
+			APP_BASE_EXTERNAL_PATH,
+			tzplatform_mkpath(TZ_USER_NAME, pkgid));
+		tzplatform_reset_user();
 	} else {
 		LOGE("Invalid STORAGE_TYPE");
 		return -1;
@@ -294,8 +294,14 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 
 	dir = opendir(app_root_dir);
 	if (dir == NULL) {
+		if (errno == ENOENT) {
+			LOGD("no entry, path(%s)", app_root_dir);
+			return 0;
+		}
+
 		LOGE("opendir() failed, path: %s, errno: %d (%s)",
-				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
+			app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
+
 		return -1;
 	}
 
@@ -420,27 +426,56 @@ static int __get_pkg_size_info(const char *pkgid,
 {
 	int ret;
 
-	ret = __calculate_pkg_size_info(STORAGE_TYPE_INTERNAL, pkgid,
-			&pkg_size_info->data_size, &pkg_size_info->cache_size,
-			&pkg_size_info->app_size);
+	ret = __calculate_pkg_size_info(STORAGE_TYPE_INTERNAL_GLOBAL_PATH,
+		pkgid, &pkg_size_info->data_size,
+		&pkg_size_info->cache_size, &pkg_size_info->app_size);
 	if (ret < 0) {
-		LOGE("Calculating internal package size info failed: %d", ret);
+		LOGE("failed to calculate interal(global) size " \
+			"for pkgid(%s)", pkgid);
 	} else {
-		LOGD("size_info: %lld %lld %lld", pkg_size_info->data_size,
+		LOGD("size_info(upto global): %lld %lld %lld",
+			pkg_size_info->data_size,
 			pkg_size_info->cache_size, pkg_size_info->app_size);
 	}
 
-#if 0 /* TODO */
-	ret = __calculate_pkg_size_info(STORAGE_TYPE_EXTERNAL, pkgid,
-			&pkg_size_info->ext_data_size,
-			&pkg_size_info->ext_cache_size,
-			&pkg_size_info->ext_app_size);
-	if (ret < 0)
-		LOGD("Calculating external package size info failed: %d", ret);
-	LOGD("size_info(external): %lld %lld %lld", pkg_size_info->ext_data_size,
+	ret = __calculate_pkg_size_info(STORAGE_TYPE_INTERNAL_USER_PATH,
+		pkgid, &pkg_size_info->data_size,
+		&pkg_size_info->cache_size, &pkg_size_info->app_size);
+	if (ret < 0) {
+		LOGE("failed to calculate interal(global) size " \
+			"for pkgid(%s)", pkgid);
+	} else {
+		LOGD("size_info(upto user): %lld %lld %lld",
+			pkg_size_info->data_size,
+			pkg_size_info->cache_size, pkg_size_info->app_size);
+	}
+
+	ret = __calculate_pkg_size_info(STORAGE_TYPE_EXTERNAL_GLOBAL_PATH,
+		pkgid, &pkg_size_info->ext_data_size,
+		&pkg_size_info->ext_cache_size, &pkg_size_info->ext_app_size);
+	if (ret < 0) {
+		LOGE("failed to calculate interal(global) size " \
+			"for pkgid(%s)", pkgid);
+	} else {
+		LOGD("size_info(external, upto global): %lld %lld %lld",
+			pkg_size_info->ext_data_size,
 			pkg_size_info->ext_cache_size,
 			pkg_size_info->ext_app_size);
-#endif
+	}
+
+	ret = __calculate_pkg_size_info(STORAGE_TYPE_EXTERNAL_USER_PATH,
+		pkgid, &pkg_size_info->ext_data_size,
+		&pkg_size_info->ext_cache_size, &pkg_size_info->ext_app_size);
+	if (ret < 0) {
+		LOGE("failed to calculate interal(global) size " \
+			"for pkgid(%s)", pkgid);
+	} else {
+		LOGD("size_info(external, upto user): %lld %lld %lld",
+			pkg_size_info->ext_data_size,
+			pkg_size_info->ext_cache_size,
+			pkg_size_info->ext_app_size);
+	}
+
 	return ret;
 }
 
@@ -627,22 +662,22 @@ int main(int argc, char *argv[])
 	case PM_GET_PKG_SIZE_INFO:
 		/* send result to signal */
 		ret = __get_pkg_size_info(pkgid, &info);
-		if (ret == 0) {
-			ret = __send_result_to_signal(pi, req_key,
-					pkgid, &info);
+		if (ret == 0)
 			size = info.app_size + info.data_size + info.cache_size;
-		}
+		/* always send a result */
+		ret = __send_result_to_signal(pi, req_key,
+					pkgid, &info);
 		ret = __make_size_info_file(req_key, size);
 		break;
 	case PM_GET_TOTAL_PKG_SIZE_INFO:
 		/* send result to signal */
 		ret = pkgmgrinfo_pkginfo_get_usr_list(
 				__get_total_pkg_size_info_cb, &info, getuid());
-		if (ret == 0) {
-			ret = __send_result_to_signal(pi, req_key,
-					PKG_SIZE_INFO_TOTAL, &info);
+		if (ret == 0)
 			size = info.app_size + info.data_size + info.cache_size;
-		}
+		/* always send a result */
+		ret = __send_result_to_signal(pi, req_key,
+					PKG_SIZE_INFO_TOTAL, &info);
 		ret = __make_size_info_file(req_key, size);
 		break;
 	default:
@@ -651,10 +686,18 @@ int main(int argc, char *argv[])
 		break;
 	}
 
-	if (pkgmgr_installer_send_signal(pi, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
-				pkgid, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
-				PKGMGR_INSTALLER_END_KEY_STR))
+	/* Only PM_GET_SIZE_INFO type needs 'end' signal,
+	 * because the result is sent on each package's calculation.
+	 * So, the callback needs to know the end of results.
+	 * This is common operation since previous tizen version.
+	 * Related API : pkgmgr_client_request_size_info
+	 */
+	if (get_type == PM_GET_SIZE_INFO) {
+		if (pkgmgr_installer_send_signal(pi, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
+			pkgid, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
+			PKGMGR_INSTALLER_END_KEY_STR))
 		LOGE("failed to send finished signal");
+	}
 
 	LOGD("get size result = %d", ret);
 	pkgmgr_installer_free(pi);
