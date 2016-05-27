@@ -53,13 +53,12 @@
 #define OWNER_ROOT 0
 #define GLOBAL_USER tzplatform_getuid(TZ_SYS_GLOBALAPP_USER)
 
-#if 0 /* TODO: installed at external storage is not supported yet */
-#define APP_BASE_EXTERNAL_PATH ""
-#endif
+#define APP_BASE_EXTERNAL_PATH tzplatform_mkpath(TZ_SYS_MEDIA, "SDCardA1/apps")
 
 typedef enum {
-	STORAGE_TYPE_INTERNAL,
-	STORAGE_TYPE_EXTERNAL,
+	STORAGE_TYPE_INTERNAL_GLOBAL_PATH,
+	STORAGE_TYPE_INTERNAL_USER_PATH,
+	STORAGE_TYPE_EXTERNAL_USER_PATH,
 	STORAGE_TYPE_MAX = 255,
 } STORAGE_TYPE;
 
@@ -89,7 +88,7 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 		ret = fstat(dfd, &st);
 		if (ret < 0) {
 			LOGE("fstat() failed, file_info: ., errno: %d (%s)", errno,
-					strerror_r(errno, buf, sizeof(buf)));
+				strerror_r(errno, buf, sizeof(buf)));
 			return -1;
 		}
 		size += __stat_size(&st);
@@ -98,13 +97,13 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 	dir = fdopendir(dfd);
 	if (dir == NULL) {
 		LOGE("fdopendir() failed, errno: %d (%s)", errno,
-				strerror_r(errno, buf, sizeof(buf)));
+			strerror_r(errno, buf, sizeof(buf)));
 		return -1;
 	}
 
 	for (ret = readdir_r(dir, &dent, &result);
-			ret == 0 && result != NULL;
-			ret = readdir_r(dir, &dent, &result)) {
+		ret == 0 && result != NULL;
+		ret = readdir_r(dir, &dent, &result)) {
 		file_info = dent.d_name;
 		if (file_info[0] == '.') {
 			if (file_info[1] == '\0')
@@ -117,7 +116,7 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 			subfd = openat(dfd, file_info, O_RDONLY | O_DIRECTORY);
 			if (subfd < 0) {
 				LOGE("openat() failed, file_info:%s, errno: %d(%s)",
-						file_info, errno, strerror_r(errno, buf, sizeof(buf)));
+					file_info, errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
 
@@ -128,7 +127,7 @@ static long long __calculate_directory_size(int dfd, bool include_itself)
 			ret = fstatat(dfd, file_info, &st, AT_SYMLINK_NOFOLLOW);
 			if (ret < 0) {
 				LOGE("fstatat() failed, file_info:%s, errno: %d(%s)",
-						file_info, errno, strerror_r(errno, buf, sizeof(buf)));
+					file_info, errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
 			size += __stat_size(&st);
@@ -158,14 +157,14 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 	fd = openat(dfd, "shared", O_RDONLY | O_DIRECTORY);
 	if (fd < 0) {
 		LOGE("openat() failed, path: %s/shared, errno: %d (%s)",
-				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
+			app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
 		return -1;
 	}
 
 	ret = fstat(fd, &st);
 	if (ret < 0) {
 		LOGE("fstat() failed, path: %s/shared, errno: %d (%s)",
-				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
+			app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 	*app_size += __stat_size(&st);  /* shared directory */
@@ -185,7 +184,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
 		LOGE("openat() failed, file_info: data, errno: %d (%s)",
-				errno, strerror_r(errno, buf, sizeof(buf)));
+			errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
@@ -203,7 +202,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
 		LOGD("openat() failed, file_info: trusted, errno: %d (%s)",
-				errno, strerror_r(errno, buf, sizeof(buf)));
+			errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
@@ -221,7 +220,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
 		LOGE("openat() failed, file_info: res, errno: %d (%s)",
-				errno, strerror_r(errno, buf, sizeof(buf)));
+			errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
@@ -239,7 +238,7 @@ static long long __calculate_shared_dir_size(int dfd, const char *app_root_dir,
 		close(subfd);
 	} else if (subfd < 0 && errno != ENOENT) {
 		LOGE("openat() failed, file_info: data, errno: %d (%s)",
-				errno, strerror_r(errno, buf, sizeof(buf)));
+			errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 
@@ -253,11 +252,6 @@ error:
 		close(subfd);
 
 	return -1;
-}
-
-static int __is_global(uid_t uid)
-{
-	return (uid == OWNER_ROOT || uid == GLOBAL_USER) ? 1 : 0;
 }
 
 static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
@@ -275,18 +269,20 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 	struct dirent ent, *result;
 	long long size = 0;
 
-	if (type == STORAGE_TYPE_INTERNAL) {
-		if (!__is_global(uid))
-			tzplatform_set_user(uid);
+	if (type == STORAGE_TYPE_INTERNAL_GLOBAL_PATH) {
 		snprintf(app_root_dir, sizeof(app_root_dir), "%s",
-				tzplatform_mkpath(__is_global(uid)
-					? TZ_SYS_RW_APP : TZ_USER_APP, pkgid));
+			tzplatform_mkpath(TZ_SYS_RW_APP, pkgid));
+	} else if (type == STORAGE_TYPE_INTERNAL_USER_PATH) {
+		tzplatform_set_user(uid);
+		snprintf(app_root_dir, sizeof(app_root_dir), "%s",
+			tzplatform_mkpath(TZ_USER_APP, pkgid));
 		tzplatform_reset_user();
-#if 0 /* TODO: installed at external storage is not supported yet */
-	} else if (type == STORAGE_TYPE_EXTERNAL) {
-		snprintf(app_root_dir, MAX_PATH_LENGTH, "%s%s/",
-				APP_BASE_EXTERNAL_PATH, pkgid);
-#endif
+	} else if (type == STORAGE_TYPE_EXTERNAL_USER_PATH) {
+		tzplatform_set_user(uid);
+		snprintf(app_root_dir, MAX_PATH_LENGTH, "%s%s",
+			APP_BASE_EXTERNAL_PATH,
+			tzplatform_mkpath(TZ_USER_NAME, pkgid));
+		tzplatform_reset_user();
 	} else {
 		LOGE("Invalid STORAGE_TYPE");
 		return -1;
@@ -294,8 +290,14 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 
 	dir = opendir(app_root_dir);
 	if (dir == NULL) {
+		if (errno == ENOENT) {
+			LOGD("no entry, path(%s)", app_root_dir);
+			return 0;
+		}
+
 		LOGE("opendir() failed, path: %s, errno: %d (%s)",
-				app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
+			app_root_dir, errno, strerror_r(errno, buf, sizeof(buf)));
+
 		return -1;
 	}
 
@@ -303,7 +305,7 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 	ret = fstat(dfd, &st);
 	if (ret < 0) {
 		LOGE("fstat() failed, path: %s, errno: %d (%s)", app_root_dir,
-				errno, strerror_r(errno, buf, sizeof(buf)));
+			errno, strerror_r(errno, buf, sizeof(buf)));
 		goto error;
 	}
 	*app_size += __stat_size(&st);
@@ -325,7 +327,7 @@ static int __calculate_pkg_size_info(STORAGE_TYPE type, const char *pkgid,
 		if (subfd < 0) {
 			if (errno != ENOENT) {
 				LOGE("openat() failed, errno: %d (%s)",
-						errno, strerror_r(errno, buf, sizeof(buf)));
+					errno, strerror_r(errno, buf, sizeof(buf)));
 				goto error;
 			}
 			continue;
@@ -420,27 +422,43 @@ static int __get_pkg_size_info(const char *pkgid,
 {
 	int ret;
 
-	ret = __calculate_pkg_size_info(STORAGE_TYPE_INTERNAL, pkgid,
-			&pkg_size_info->data_size, &pkg_size_info->cache_size,
-			&pkg_size_info->app_size);
+	ret = __calculate_pkg_size_info(STORAGE_TYPE_INTERNAL_GLOBAL_PATH,
+		pkgid, &pkg_size_info->data_size,
+		&pkg_size_info->cache_size, &pkg_size_info->app_size);
 	if (ret < 0) {
-		LOGE("Calculating internal package size info failed: %d", ret);
+		LOGE("failed to calculate interal(global) size " \
+			"for pkgid(%s)", pkgid);
 	} else {
-		LOGD("size_info: %lld %lld %lld", pkg_size_info->data_size,
+		LOGD("size_info(upto global), (%lld %lld %lld)",
+			pkg_size_info->data_size,
 			pkg_size_info->cache_size, pkg_size_info->app_size);
 	}
 
-#if 0 /* TODO */
-	ret = __calculate_pkg_size_info(STORAGE_TYPE_EXTERNAL, pkgid,
-			&pkg_size_info->ext_data_size,
-			&pkg_size_info->ext_cache_size,
-			&pkg_size_info->ext_app_size);
-	if (ret < 0)
-		LOGD("Calculating external package size info failed: %d", ret);
-	LOGD("size_info(external): %lld %lld %lld", pkg_size_info->ext_data_size,
+	ret = __calculate_pkg_size_info(STORAGE_TYPE_INTERNAL_USER_PATH,
+		pkgid, &pkg_size_info->data_size,
+		&pkg_size_info->cache_size, &pkg_size_info->app_size);
+	if (ret < 0) {
+		LOGE("failed to calculate interal(global) size " \
+			"for pkgid(%s)", pkgid);
+	} else {
+		LOGD("size_info(upto user), (%lld %lld %lld)",
+			pkg_size_info->data_size,
+			pkg_size_info->cache_size, pkg_size_info->app_size);
+	}
+
+	ret = __calculate_pkg_size_info(STORAGE_TYPE_EXTERNAL_USER_PATH,
+		pkgid, &pkg_size_info->ext_data_size,
+		&pkg_size_info->ext_cache_size, &pkg_size_info->ext_app_size);
+	if (ret < 0) {
+		LOGE("failed to calculate interal(global) size " \
+			"for pkgid(%s)", pkgid);
+	} else {
+		LOGD("size_info(external, upto user), (%lld %lld %lld)",
+			pkg_size_info->ext_data_size,
 			pkg_size_info->ext_cache_size,
 			pkg_size_info->ext_app_size);
-#endif
+	}
+
 	return ret;
 }
 
@@ -459,10 +477,9 @@ static int __get_total_pkg_size_info_cb(const pkgmgrinfo_pkginfo_h handle,
 	}
 
 	ret = __get_pkg_size_info(pkgid, &temp_pkg_size_info);
-	if (ret < 0) {
-		LOGE("failed to get size");
-		return -1;
-	}
+	if (ret < 0)
+		LOGW("failed to get size some path");
+		/* even if it's an error, store all the valid result */
 
 	pkg_size_info->app_size += temp_pkg_size_info.app_size;
 	pkg_size_info->data_size += temp_pkg_size_info.data_size;
@@ -485,7 +502,7 @@ int __make_size_info_file(char *req_key, long long size)
 		return -1;
 
 	snprintf(info_file, sizeof(info_file), "%s/%s", PKG_SIZE_INFO_PATH,
-			req_key);
+		req_key);
 	LOGD("File path = (%s), size = (%lld)", info_file, size);
 
 	file = fopen(info_file, "w");
@@ -525,10 +542,9 @@ static int __send_sizeinfo_cb(const pkgmgrinfo_pkginfo_h handle,
 	}
 
 	ret = __get_pkg_size_info(pkgid, &temp_pkg_size_info);
-	if (ret < 0) {
+	if (ret < 0)
 		LOGE("failed to get size");
-		return -1;
-	}
+		/* even if it's an error, store all the valid result */
 
 	total_size = temp_pkg_size_info.app_size +
 		temp_pkg_size_info.data_size + temp_pkg_size_info.cache_size;
@@ -540,8 +556,8 @@ static int __send_sizeinfo_cb(const pkgmgrinfo_pkginfo_h handle,
 	snprintf(data_buf, sizeof(data_buf), "%d", data_size);
 
 	return pkgmgr_installer_send_signal(pi,
-			PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
-			pkgid, data_buf, total_buf);
+		PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
+		pkgid, data_buf, total_buf);
 }
 
 static int __send_result_to_signal(pkgmgr_installer *pi, const char *req_key,
@@ -555,8 +571,8 @@ static int __send_result_to_signal(pkgmgr_installer *pi, const char *req_key,
 		return -1;
 
 	ret = pkgmgr_installer_send_signal(pi,
-			PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
-			pkgid, PKGMGR_INSTALLER_GET_SIZE_KEY_STR, info_str);
+		PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
+		pkgid, PKGMGR_INSTALLER_GET_SIZE_KEY_STR, info_str);
 	free(info_str);
 
 	return ret;
@@ -613,36 +629,36 @@ int main(int argc, char *argv[])
 	case PM_GET_ALL_PKGS:
 		/* send result to file */
 		ret = pkgmgrinfo_pkginfo_get_usr_list(
-				__get_total_pkg_size_info_cb, &info, getuid());
+			__get_total_pkg_size_info_cb, &info, getuid());
 		if (ret == 0)
 			size = info.app_size + info.data_size + info.cache_size;
 		ret = __make_size_info_file(req_key, size);
 		break;
 	case PM_GET_SIZE_INFO:
 		/* send each result to signal */
-		ret = pkgmgrinfo_pkginfo_get_usr_list(__send_sizeinfo_cb, pi,
-				getuid());
+		ret = pkgmgrinfo_pkginfo_get_usr_list(__send_sizeinfo_cb,
+			pi, getuid());
 		ret = __make_size_info_file(req_key, 0);
 		break;
 	case PM_GET_PKG_SIZE_INFO:
 		/* send result to signal */
 		ret = __get_pkg_size_info(pkgid, &info);
-		if (ret == 0) {
-			ret = __send_result_to_signal(pi, req_key,
-					pkgid, &info);
+		if (ret == 0)
 			size = info.app_size + info.data_size + info.cache_size;
-		}
+		/* always send a result */
+		ret = __send_result_to_signal(pi, req_key,
+			pkgid, &info);
 		ret = __make_size_info_file(req_key, size);
 		break;
 	case PM_GET_TOTAL_PKG_SIZE_INFO:
 		/* send result to signal */
 		ret = pkgmgrinfo_pkginfo_get_usr_list(
-				__get_total_pkg_size_info_cb, &info, getuid());
-		if (ret == 0) {
-			ret = __send_result_to_signal(pi, req_key,
-					PKG_SIZE_INFO_TOTAL, &info);
+			__get_total_pkg_size_info_cb, &info, getuid());
+		if (ret == 0)
 			size = info.app_size + info.data_size + info.cache_size;
-		}
+		/* always send a result */
+		ret = __send_result_to_signal(pi, req_key,
+			PKG_SIZE_INFO_TOTAL, &info);
 		ret = __make_size_info_file(req_key, size);
 		break;
 	default:
@@ -651,10 +667,18 @@ int main(int argc, char *argv[])
 		break;
 	}
 
-	if (pkgmgr_installer_send_signal(pi, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
-				pkgid, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
-				PKGMGR_INSTALLER_END_KEY_STR))
+	/* Only PM_GET_SIZE_INFO type needs 'end' signal,
+	 * because the result is sent on each package's calculation.
+	 * So, the callback needs to know the end of results.
+	 * This is common operation since previous tizen version.
+	 * Related API : pkgmgr_client_request_size_info
+	 */
+	if (get_type == PM_GET_SIZE_INFO) {
+		if (pkgmgr_installer_send_signal(pi, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
+			pkgid, PKGMGR_INSTALLER_GET_SIZE_KEY_STR,
+			PKGMGR_INSTALLER_END_KEY_STR))
 		LOGE("failed to send finished signal");
+	}
 
 	LOGD("get size result = %d", ret);
 	pkgmgr_installer_free(pi);
