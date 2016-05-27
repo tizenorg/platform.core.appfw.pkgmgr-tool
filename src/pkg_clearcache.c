@@ -36,6 +36,7 @@
 
 #define MAX_PKG_NAME_LEN	256
 #define INTERNAL_CACHE_PATH_PREFIX tzplatform_getenv(TZ_USER_APP)
+#define EXTERNAL_CACHE_PATH_PREFIX tzplatform_mkpath(TZ_SYS_MEDIA, "SDCardA1/apps")
 #define CACHE_PATH_POSTFIX "/cache"
 #define SHARED_PATH_POSTFIX "/shared/cache"
 
@@ -64,33 +65,38 @@ static int __clear_dir(const char *dirname)
 
 	dp = opendir(dirname);
 	if (dp == NULL) {
+		if (errno == ENOENT) {
+			LOGD("no entry, path(%s)", dirname);
+			free(abs_filename);
+			return 0;
+		}
 		LOGE("Couldn't open the directory. errno : %d (%s)\n", errno,
-				strerror_r(errno, buf, sizeof(buf)));
+			strerror_r(errno, buf, sizeof(buf)));
 		goto err;
 	}
 
 	for (ret = readdir_r(dp, &ep, &result);
-			ret == 0 && result != NULL;
-			ret = readdir_r(dp, &ep, &result)) {
+		ret == 0 && result != NULL;
+		ret = readdir_r(dp, &ep, &result)) {
 		snprintf(abs_filename, PATH_MAX - 1, "%s/%s", dirname,
-				ep.d_name);
+			ep.d_name);
 		if (lstat(abs_filename, &stFileInfo) < 0)
 			perror(abs_filename);
 
 		if (S_ISDIR(stFileInfo.st_mode)) {
 			if (strcmp(ep.d_name, ".") &&
-					strcmp(ep.d_name, "..")) {
+				strcmp(ep.d_name, "..")) {
 				ret = __clear_dir(abs_filename);
 				if (ret != 0)
 					LOGE("Couldn't remove the directory. "
-							"errno : %d (%s)\n",
-							errno, strerror_r(errno, buf, sizeof(buf)));
+						"errno : %d (%s)\n",
+						errno, strerror_r(errno, buf, sizeof(buf)));
 
 				ret = remove(abs_filename);
 				if (ret != 0) {
 					LOGE("Couldn't remove the directory. "
-							"errno : %d (%s)\n",
-							errno, strerror_r(errno, buf, sizeof(buf)));
+						"errno : %d (%s)\n",
+						errno, strerror_r(errno, buf, sizeof(buf)));
 					goto err;
 				}
 			}
@@ -98,8 +104,8 @@ static int __clear_dir(const char *dirname)
 			ret = remove(abs_filename);
 			if (ret != 0) {
 				LOGE("Couldn't remove the directory. errno : "
-						"%d (%s)\n", errno,
-						strerror_r(errno, buf, sizeof(buf)));
+					"%d (%s)\n", errno,
+					strerror_r(errno, buf, sizeof(buf)));
 				goto err;
 			}
 		}
@@ -121,6 +127,7 @@ err:
 static int __clear_cache_dir(const char *pkgid)
 {
 	int ret = 0;
+	uid_t uid = getuid();
 	char dirname[PATH_MAX] = {0,};
 
 	if (pkgid == NULL) {
@@ -130,7 +137,7 @@ static int __clear_cache_dir(const char *pkgid)
 
 	/* cache internal */
 	snprintf(dirname, sizeof(dirname), "%s/%s%s",
-			INTERNAL_CACHE_PATH_PREFIX, pkgid, CACHE_PATH_POSTFIX);
+		INTERNAL_CACHE_PATH_PREFIX, pkgid, CACHE_PATH_POSTFIX);
 
 	ret = __clear_dir(dirname);
 	if (ret < 0)
@@ -138,11 +145,36 @@ static int __clear_cache_dir(const char *pkgid)
 
 	/* shared/cache internal */
 	snprintf(dirname, sizeof(dirname), "%s/%s%s",
-			INTERNAL_CACHE_PATH_PREFIX, pkgid, SHARED_PATH_POSTFIX);
+		INTERNAL_CACHE_PATH_PREFIX, pkgid, SHARED_PATH_POSTFIX);
+
+	ret = __clear_dir(dirname);
+	if (ret < 0)
+		LOGE("Failed to clear internal shared cache dir.");
+
+	/* cache external */
+	tzplatform_set_user(uid);
+
+	snprintf(dirname, sizeof(dirname), "%s%s%s",
+		EXTERNAL_CACHE_PATH_PREFIX,
+		tzplatform_mkpath(TZ_USER_NAME, pkgid),
+		CACHE_PATH_POSTFIX);
+
+	ret = __clear_dir(dirname);
+	if (ret < 0)
+		LOGE("Failed to clear external cache dir.");
+
+	/* shared/cache external */
+	snprintf(dirname, sizeof(dirname), "%s%s%s",
+		EXTERNAL_CACHE_PATH_PREFIX,
+		tzplatform_mkpath(TZ_USER_NAME, pkgid),
+		SHARED_PATH_POSTFIX);
+
+	tzplatform_reset_user();
 
 	ret = __clear_dir(dirname);
 	if (ret < 0)
 		LOGE("Failed to clear external shared cache dir.");
+
 
 	return 0;
 }
@@ -177,7 +209,7 @@ static int __clear_all_cache_dir(void)
 	int res;
 
 	res = pkgmgrinfo_pkginfo_get_usr_list(__clear_all_cache_dir_cb,
-			&err_cnt, getuid());
+		&err_cnt, getuid());
 	if (res != PMINFO_R_OK) {
 		LOGE("Failed to get pkg list. (%d)", res);
 		return -1;
