@@ -826,6 +826,8 @@ static int __process_request(uid_t uid)
 			ret = -1;
 			break;
 		}
+
+		main_loop = g_main_loop_new(NULL, FALSE);
 		pc = pkgmgr_client_new(PC_REQUEST);
 		if (pc == NULL) {
 			printf("PkgMgr Client Creation Failed\n");
@@ -838,12 +840,12 @@ static int __process_request(uid_t uid)
 			break;
 		}
 		ret = pkgmgr_client_usr_request_service(PM_REQUEST_MOVE, data.type, pc,
-				data.pkg_type, data.pkgid, uid, NULL, NULL, NULL);
-
-		printf("pkg[%s] move result = %d\n", data.pkgid, ret);
+				data.pkg_type, data.pkgid, uid, NULL, __return_cb, NULL);
 
 		if (ret < 0)
 			break;
+
+		g_main_loop_run(main_loop);
 		ret = data.result;
 		break;
 
