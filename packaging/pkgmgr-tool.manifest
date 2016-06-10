@@ -3,6 +3,10 @@
 		<domain name="_" />
 	</request>
 	<assign>
-		<filesystem path="/usr/bin/pkgcmd" exec_label="User" />
+		<filesystem path="/usr/bin/install_preload_tpk" label="System" exec_label="none" />
+		<filesystem path="/usr/bin/pkgcmd" label="System" exec_label="none" />
+		<filesystem path="/usr/bin/pkg_clearcache" label="System" exec_label="none" />
+		<filesystem path="/usr/bin/pkg_getsize" label="System" exec_label="none" />
+		<filesystem path="/usr/bin/pkginfo" label="System" exec_label="none" />
 	</assign>
 </manifest>
