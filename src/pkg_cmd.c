@@ -534,7 +534,7 @@ static int __process_request(uid_t uid)
 #endif
 	switch (data.request) {
 	case INSTALL_REQ:
-		if (data.pkg_type[0] == '\0' || data.pkg_path[0] == '\0') {
+		if (data.pkg_path[0] == '\0') {
 			printf("Please provide the arguments.\n");
 			printf("use -h option to see usage\n");
 			data.result = PKGCMD_ERRCODE_INVALID_VALUE;
@@ -552,11 +552,13 @@ static int __process_request(uid_t uid)
 			pkgmgr_client_set_tep_path(pc, data.tep_path, data.tep_move);
 
 		if (data.des_path[0] == '\0')
-			ret = pkgmgr_client_usr_install(pc, data.pkg_type, NULL,
-					data.pkg_path, NULL, PM_QUIET,
+			ret = pkgmgr_client_usr_install(pc,
+					data.pkg_type[0] != '\0' ? data.pkg_type : NULL,
+					NULL, data.pkg_path, NULL, PM_QUIET,
 					__return_cb, pc, uid);
 		else
-			ret = pkgmgr_client_usr_install(pc, data.pkg_type,
+			ret = pkgmgr_client_usr_install(pc,
+					data.pkg_type[0] != '\0' ? data.pkg_type : NULL,
 					data.des_path, data.pkg_path,
 					NULL, PM_QUIET, __return_cb, pc, uid);
 
@@ -651,7 +653,7 @@ static int __process_request(uid_t uid)
 		break;
 
 	case REINSTALL_REQ:
-		if (data.pkg_type[0] == '\0' || data.pkgid[0] == '\0') {
+		if (data.pkgid[0] == '\0') {
 			printf("Please provide the arguments.\n");
 			printf("use -h option to see usage\n");
 			data.result = PKGCMD_ERRCODE_INVALID_VALUE;
@@ -665,7 +667,7 @@ static int __process_request(uid_t uid)
 			break;
 		}
 
-		ret = pkgmgr_client_usr_reinstall(pc, data.pkg_type, data.pkgid, NULL, PM_QUIET, __return_cb, pc, uid);
+		ret = pkgmgr_client_usr_reinstall(pc, NULL, data.pkgid, NULL, PM_QUIET, __return_cb, pc, uid);
 		if (ret < 0) {
 			data.result = PKGCMD_ERRCODE_ERROR;
 			if (access(data.pkg_path, F_OK) != 0)
@@ -676,7 +678,7 @@ static int __process_request(uid_t uid)
 		ret = data.result;
 		break;
 	case MOUNT_INSTALL_REQ:
-		if (data.pkg_type[0] == '\0' || data.pkg_path[0] == '\0') {
+		if (data.pkg_path[0] == '\0') {
 			printf("Please provide the arguments.\n");
 			printf("use -h option to see usage\n");
 			data.result = PKGCMD_ERRCODE_INVALID_VALUE;
@@ -694,11 +696,13 @@ static int __process_request(uid_t uid)
 			pkgmgr_client_set_tep_path(pc, data.tep_path, data.tep_move);
 
 		if (data.des_path[0] == '\0')
-			ret = pkgmgr_client_usr_mount_install(pc, data.pkg_type, NULL,
-					data.pkg_path, NULL, PM_QUIET,
+			ret = pkgmgr_client_usr_mount_install(pc,
+					data.pkg_type[0] != '\0' ? data.pkg_type : NULL,
+					NULL, data.pkg_path, NULL, PM_QUIET,
 					__return_cb, pc, uid);
 		else
-			ret = pkgmgr_client_usr_mount_install(pc, data.pkg_type,
+			ret = pkgmgr_client_usr_mount_install(pc,
+					data.pkg_type[0] != '\0' ? data.pkg_type : NULL,
 					data.des_path, data.pkg_path,
 					NULL, PM_QUIET, __return_cb, pc, uid);
 
