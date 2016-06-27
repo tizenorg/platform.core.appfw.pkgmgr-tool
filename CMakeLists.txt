@@ -24,11 +24,6 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/client/include)
 
 INCLUDE(FindPkgConfig)
 
-pkg_check_modules(pkgs_initdb REQUIRED bundle pkgmgr-parser pkgmgr-info libtzplatform-config pkgmgr)
-FOREACH(flag ${pkgs_initdb_CFLAGS})
-	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
-ENDFOREACH(flag)
-
 pkg_check_modules(pkgs_test REQUIRED dlog glib-2.0 bundle pkgmgr pkgmgr-parser pkgmgr-info pkgmgr-installer
 libtzplatform-config aul)
 FOREACH(flag ${pkgs_test_CFLAGS})
@@ -66,8 +61,6 @@ INSTALL(TARGETS install_preload_tpk DESTINATION bin)
 ADD_EXECUTABLE(rsc-slice src/pkg_rsc_slice.c)
 TARGET_LINK_LIBRARIES(rsc-slice ${pkgs_test_LDFLAGS})
 INSTALL(TARGETS rsc-slice DESTINATION bin)
-
-INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/10_package-manager-add.post  DESTINATION ${SYSCONF_INSTALL_DIR}/gumd/useradd.d/)
 
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/mime.wac.xml DESTINATION /usr/share/mime/packages/)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/mime.tpk.xml DESTINATION /usr/share/mime/packages/)
