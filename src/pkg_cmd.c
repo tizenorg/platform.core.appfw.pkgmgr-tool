@@ -153,6 +153,12 @@ static void __error_no_to_string(int errnumber, char **errstr)
 	if (errstr == NULL)
 		return;
 	switch (errnumber) {
+	case PKGCMD_ERRCODE_GRANT_PERMISSION_ERROR:
+		*errstr = PKGCMD_ERRCODE_GRANT_PERMISSION_ERROR_STR;
+		break;
+	case PKGCMD_ERRCODE_IMAGE_ERROR:
+		*errstr = PKGCMD_ERRCODE_IMAGE_ERROR_STR;
+		break;
 	case PKGCMD_ERRCODE_UNZIP_ERROR:
 		*errstr = PKGCMD_ERRCODE_UNZIP_ERROR_STR;
 		break;
