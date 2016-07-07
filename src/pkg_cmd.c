@@ -447,6 +447,7 @@ static int __pkgmgr_list_cb(const pkgmgrinfo_pkginfo_h handle, void *user_data)
 	char *pkg_version = NULL;
 	char *pkg_label = NULL;
 	bool for_all_users = 0;
+	pkgmgrinfo_installed_storage storage;
 
 	ret = pkgmgrinfo_pkginfo_get_pkgid(handle, &pkgid);
 	if (ret == -1) {
@@ -473,8 +474,15 @@ static int __pkgmgr_list_cb(const pkgmgrinfo_pkginfo_h handle, void *user_data)
 		return ret;
 	}
 
-	printf("%s\tpkg_type [%s]\tpkgid [%s]\tname [%s]\tversion [%s]\n",
-			for_all_users ? "system apps" : "user apps ", pkg_type, pkgid, pkg_label, pkg_version);
+	ret = pkgmgrinfo_pkginfo_get_installed_storage(handle, &storage);
+	if (ret == -1) {
+		printf("Failed to get pkgmgrinfo_pkginfo_get_installed_storage\n");
+		return ret;
+	}
+
+	printf("%s\tpkg_type [%s]\tpkgid [%s]\tname [%s]\tversion [%s]\tstorage [%s]\n",
+			for_all_users ? "system apps" : "user apps ", pkg_type, pkgid, pkg_label, pkg_version,
+			(storage == PMINFO_EXTERNAL_STORAGE) ? "external":"internal");
 	return ret;
 }
 
