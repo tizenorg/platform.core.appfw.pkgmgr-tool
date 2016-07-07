@@ -778,10 +778,22 @@ static int __process_request(uid_t uid)
 				largv[1] = data.label;
 				ret = pkgmgr_client_usr_activate_appv(pc, data.pkgid, largv, uid);
 			}
-		} else
-			/* enable package which belongs to this user */
-			ret = pkgmgr_client_usr_activate(pc, data.pkg_type, data.pkgid, uid);
+		} else {
+#if 0
+			ret = pkgmgr_client_set_status_type(pc, PKGMGR_CLIENT_STATUS_INSTALL);
+			if (ret != PKGMGR_R_OK) {
+				printf("Failed to set status type[%d]\n", ret);
+				break;
+			}
+#endif
+			ret = pkgmgr_client_listen_status(pc, __return_cb, NULL);
+			if (ret != PKGMGR_R_OK) {
+				printf("Failed to set callback[%d]\n", ret);
+				break;
+			}
 
+			ret = pkgmgr_client_usr_activate(pc, data.pkg_type, data.pkgid, uid);
+		}
 		if (ret < 0)
 			break;
 
@@ -812,10 +824,20 @@ static int __process_request(uid_t uid)
 			else
 				/* disable app which belongs to this user */
 				ret = pkgmgr_client_usr_deactivate_app(pc, data.pkgid, __app_return_cb, uid);
-		} else
+		} else {
+			ret = pkgmgr_client_set_status_type(pc, PKGMGR_CLIENT_STATUS_UNINSTALL);
+			if (ret != PKGMGR_R_OK) {
+				printf("Failed to set status type[%d]\n", ret);
+				break;
+			}
+			ret = pkgmgr_client_listen_status(pc, __return_cb, NULL);
+			if (ret < 0) {
+				printf("Failed to set callback[%d]\n", ret);
+				break;
+			}
 			/* disable package which belongs to this user*/
 			ret = pkgmgr_client_usr_deactivate(pc, data.pkg_type, data.pkgid, uid);
-
+		}
 		if (ret < 0)
 			break;
 
