@@ -482,7 +482,7 @@ static int __pkgmgr_list_cb(const pkgmgrinfo_pkginfo_h handle, void *user_data)
 
 	printf("%s\tpkg_type [%s]\tpkgid [%s]\tname [%s]\tversion [%s]\tstorage [%s]\n",
 			for_all_users ? "system apps" : "user apps ", pkg_type, pkgid, pkg_label, pkg_version,
-			(storage == PMINFO_EXTERNAL_STORAGE) ? "external":"internal");
+			(storage == PMINFO_EXTERNAL_STORAGE) ? "external" : "internal");
 	return ret;
 }
 
@@ -1035,12 +1035,11 @@ static int __process_request(uid_t uid)
 			break;
 		}
 
-		if (strcmp(data.pkgid, PKG_SIZE_INFO_TOTAL) == 0) {
+		if (strcmp(data.pkgid, PKG_SIZE_INFO_TOTAL) == 0)
 			ret = pkgmgr_client_get_total_package_size_info(pc, __total_pkg_size_info_recv_cb, NULL);
-
-		} else {
+		else
 			ret = pkgmgr_client_get_package_size_info(pc, data.pkgid, __pkg_size_info_recv_cb, NULL);
-		}
+
 		if (ret < 0) {
 			data.result = PKGCMD_ERR_FATAL_ERROR;
 			break;
