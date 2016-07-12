@@ -1851,7 +1851,7 @@ static int __get_app_info(char *appid)
 		component == PMINFO_WATCH_APP) {
 		printf("component: %s\n", component == PMINFO_UI_APP ?
 			"uiapp" : component == PMINFO_WIDGET_APP ?
-			"widgetapp": "watchapp");
+			"widgetapp" : "watchapp");
 		if (icon)
 			printf("Icon: %s\n", icon);
 		if (label)

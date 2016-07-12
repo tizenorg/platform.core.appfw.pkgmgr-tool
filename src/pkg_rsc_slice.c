@@ -43,7 +43,6 @@
 
 static int __process_slice(void);
 static void __print_usage();
-//static int __is_authorized();
 
 struct rsc_tool_args_t {
 	char res_path[PATH_MAX];
