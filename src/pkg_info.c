@@ -1665,19 +1665,6 @@ static int __get_app_control_list(char *appid)
 	return 0;
 }
 
-static int __set_app_enabled(char *appid, bool enabled)
-{
-	int ret = -1;
-
-	ret = pkgmgrinfo_appinfo_set_state_enabled(appid, enabled);
-	if (ret < 0) {
-		printf("Failed to get handle\n");
-		return -1;
-	}
-
-	return 0;
-}
-
 static int __get_app_list(char *pkgid, uid_t uid)
 {
 	int ret = -1;
@@ -1958,21 +1945,7 @@ int main(int argc, char *argv[])
 			goto end;
 		}
 	} else if (argc == 4) {
-		if (strcmp(argv[1], "--setappenabled") == 0) {
-			ret = __set_app_enabled(argv[2], (strcmp(argv[3], "0") == 0) ? false : true);
-			if (ret == -1) {
-				printf("set app enabled failed\n");
-				goto end;
-			}
-			goto end;
-		} else if (strcmp(argv[1], "--setpkgenabled") == 0) {
-			ret = __set_app_enabled(argv[2], (strcmp(argv[3], "0") == 0) ? false : true);
-			if (ret == -1) {
-				printf("set pkg enabled failed\n");
-				goto end;
-			}
-			goto end;
-		} else if (strcmp(argv[1], "--cmp-pkgcert") == 0) {
+		if (strcmp(argv[1], "--cmp-pkgcert") == 0) {
 			ret = __compare_pkg_certinfo_from_db(argv[2], argv[3], getuid());
 			if (ret == -1) {
 				printf("compare certinfo from db failed\n");
