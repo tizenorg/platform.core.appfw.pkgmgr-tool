@@ -1208,6 +1208,12 @@ static int __set_certinfo_in_db(char *pkgid, uid_t uid)
 		choice = __get_integer_input_data();
 		switch (choice) {
 		case 0:
+			ret = pkgmgr_installer_delete_certinfo(pkgid);
+			if (ret < 0) {
+				printf("pkgmgr_installer_delete_certinfo failed\n");
+				pkgmgr_installer_destroy_certinfo_set_handle(handle);
+				return -1;
+			}
 			ret = pkgmgr_installer_save_certinfo(pkgid, handle, uid);
 			if (ret < 0) {
 				printf("pkgmgr_installer_save_certinfo failed\n");
